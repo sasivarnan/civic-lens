@@ -1,0 +1,20 @@
+{
+  "name": "civic-lens",
+  "private": true,
+  "packageManager": "pnpm@12.4.1",
+  "scripts": {
+    "dev": "pnpm --filter @civiclens/shared build && pnpm --parallel --filter './apps/*' dev",
+    "build": "pnpm --filter @civiclens/shared build && pnpm --filter @civiclens/frontend build && pnpm --filter @civiclens/backend build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --if-present test",
+    "db:migrate": "pnpm --filter @civiclens/backend db:migrate",
+    "db:seed": "pnpm --filter @civiclens/backend db:seed",
+    "setup:local": "node scripts/setup-local.mjs",
+    "services:up": "docker compose up -d --build",
+    "check:unused": "knip --no-progress --include-entry-exports",
+    "lint": "pnpm -r --if-present lint"
+  },
+  "devDependencies": {
+    "knip": "6.41.0"
+  }
+}

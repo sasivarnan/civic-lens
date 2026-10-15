@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+.local/
+playwright-report/
+test-results/
+apps/frontend/public/vision/
+apps/frontend/public/models/
