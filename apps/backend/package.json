@@ -1,0 +1,37 @@
+{
+  "name": "@civiclens/backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node --env-file-if-exists=../../.env dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "tsx --env-file-if-exists=../../.env src/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=../../.env src/seed.ts",
+    "test:smoke": "tsx --env-file-if-exists=../../.env src/smoke.ts"
+  },
+  "dependencies": {
+    "@auth/core": "latest",
+    "@auth/drizzle-adapter": "latest",
+    "@aws-sdk/client-s3": "latest",
+    "@civiclens/shared": "workspace:*",
+    "@hono/auth-js": "latest",
+    "@hono/node-server": "latest",
+    "drizzle-orm": "latest",
+    "effect": "4.0.4",
+    "hono": "latest",
+    "nodemailer": "^8.0.11",
+    "postgres": "latest",
+    "sharp": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "@types/nodemailer": "latest",
+    "tsx": "latest",
+    "typescript": "~6.0.2",
+    "vitest": "latest"
+  }
+}
