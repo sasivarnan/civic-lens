@@ -76,7 +76,10 @@ export async function analyze(
           }),
         },
       );
-      if (!r.ok) throw new Error("AI request failed");
+      if (!r.ok) {
+        console.warn("Hosted Gemma request failed: HTTP", r.status);
+        throw new Error("AI request failed");
+      }
       const data = (await r.json()) as any;
       text =
         data.candidates?.[0]?.content?.parts

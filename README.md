@@ -46,7 +46,7 @@ Local Gemma receives a metadata-free derivative with a longest edge of 512 pixel
 
 The default development model path uses the installed `gemma4:12b-mlx` and `embeddinggemma-2:740m` through Ollama. Model failures are shown explicitly. No fake AI fallback is used. The embedding adapter uses 768-dimensional vectors and records its model/prefix configuration. A stored job retries failed indexing, with a bounded attempt count. Normal issue reading does not require AI availability.
 
-Hosted validation started on 17 October 2026 with `gemma-4-26b-a4b-it`. The saved key successfully listed the two hosted Gemma models. Generation returned HTTP 402 because the API project's prepaid credits were depleted. Live image analysis and quality checks remain incomplete. Mocked tests cover the hosted request, metadata removal, result validation, and safe failures. Do not treat these as live inference tests or assume local and hosted output quality is equal. Keep `GEMINI_API_KEY` server-only in the ignored `.env`. Provider privacy review and event eligibility checks remain open. Storage hosting and change comparison remain on hold.
+Hosted validation passed on 17 October 2026 with `gemma-4-26b-a4b-it` after the user replaced a key whose project had depleted credits. Three synthetic image checks and the full local API smoke test used real hosted inference. One earlier full-flow attempt returned a service error; its cause remains unconfirmed. Real-photo quality, sustained reliability, and public deployment remain unverified. Mocked tests separately cover hosted requests, metadata removal, result validation, and safe failures. Do not assume local and hosted output quality is equal. Keep `GEMINI_API_KEY` server-only in the ignored `.env`. Provider privacy review and event eligibility checks remain open. Storage hosting and change comparison remain on hold.
 
 Garage is local S3-compatible development storage. Its port is bound to loopback. The application serves images through visibility checks; buckets are not public websites. Keep the configurable S3 interface when choosing hosted storage. Local volumes persist data; do not remove volumes unless you intend to remove that local data.
 
@@ -86,7 +86,7 @@ For a live local smoke test, start the app and services, then provide a non-sens
 TEST_IMAGE=/absolute/path/to/approved-test.jpg pnpm --filter @civiclens/backend test:smoke
 ```
 
-This test uses the real local email flow, Gemma, EmbeddingGemma, PostgreSQL, and Garage. It creates a test issue, adds evidence and community actions, checks moderation access, and hides its test issue afterwards. Use the local development database only. The test email links and session cookies are not printed.
+This test uses the real local email flow, the configured Gemma provider, EmbeddingGemma, PostgreSQL, and Garage. It checks that the analysis receipt names the configured model. It creates a test issue, adds evidence and community actions, checks moderation access, and hides its test issue afterwards. Use the local development database only. The test email links and session cookies are not printed.
 
 ## Container build
 

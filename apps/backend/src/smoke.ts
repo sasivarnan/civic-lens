@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
+import { config } from "./config.js";
 const base = "http://localhost:3000",
   origin = "http://localhost:5173";
 class Client {
@@ -88,7 +89,17 @@ const review = await reporter.call("/api/analyses", {
 assert.equal(review.status, 200, await review.clone().text());
 const result = (await review.json()) as any;
 assert.ok(result.receipt);
-console.log("PASS live local Gemma analysis and signed receipt");
+const reviewedModel = JSON.parse(
+  Buffer.from(result.receipt.split(".")[0], "base64url").toString(),
+).model;
+assert.equal(
+  reviewedModel,
+  config.MODEL_PROVIDER === "gemini"
+    ? config.GEMMA_MODEL
+    : config.OLLAMA_GEMMA_MODEL,
+  "The backend must use the configured model after a provider change",
+);
+console.log(`PASS live ${reviewedModel} analysis and signed receipt`);
 const report = {
   title: "Demo smoke test: reviewed road damage",
   description,

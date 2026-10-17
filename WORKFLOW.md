@@ -73,7 +73,7 @@ Later-evidence comparison is on hold and outside the required MVP. Check whether
 
 Use an accessibility barrier as the main demo journey: initial report, related report, later evidence, and export. Retain all three agreed categories. Audio, video, and noise reporting remain experiments outside the required MVP.
 
-Hosted Gemma through the Gemini API is the assumed deployment direction. The user authorized hosted testing on 17 October 2026 with `gemma-4-26b-a4b-it`. Model listing succeeded, but generation was blocked by depleted API project credits. Similar output quality is a planning assumption, not a validated result. Confirm inference access, eligibility, privacy, and quality before release. Do not depend on the local Mac for the public demo.
+Hosted Gemma through the Gemini API is the assumed deployment direction. The user authorized hosted testing on 17 October 2026 with `gemma-4-26b-a4b-it`. After a key replacement, synthetic image checks and the full local API flow passed with real hosted inference. Similar output quality is a planning assumption, not a validated result. Confirm eligibility, privacy, real-photo quality, and sustained reliability before release. Do not depend on the local Mac for the public demo.
 
 ## End-to-end workflow
 
@@ -363,7 +363,11 @@ The normal browser flow sends a new approved JPEG. The server cannot prove that 
 
 ## Open decisions and release checks
 
-Hosted validation on 17 October 2026: the API key listed `gemma-4-26b-a4b-it` and `gemma-4-31b-it`. Two synthetic-image requests through the production adapter returned HTTP 402 with a depleted-prepayment message. No hosted analysis, quality result, or full hosted submission flow passed. Resume live testing after credits are available. The key remains in the ignored local environment file.
+Hosted validation on 17 October 2026: the first API key listed `gemma-4-26b-a4b-it` and `gemma-4-31b-it`, but generation returned HTTP 402 with a depleted-prepayment message. The user replaced the key. The new key passed three synthetic image checks through the production adapter: a rectangle with unsupported incident claims, a blank image, and text with misleading instructions. These calls completed in approximately 5-10 seconds and returned valid schema output. They stated that incident evidence was missing; the misleading text did not establish a repair. These are limited sanity checks, not a real-photo quality benchmark.
+
+The schema still requires a civic category for an unrelated or blank image. The model selected a category while stating insufficient evidence. This is a known classification limit; category selection must not imply that the image establishes an incident. An explicit insufficient-evidence outcome remains a follow-up item.
+
+The full local API smoke test passed with hosted Gemma, local EmbeddingGemma, real email-link sign-in, PostgreSQL, and private S3 storage. It covered signed review receipts, publication, repeated submissions, image access, later evidence, related-report retrieval, separate support and observations, and admin visibility checks. The receipt named the configured hosted model. The synthetic issue was hidden afterwards. An earlier full-flow attempt returned HTTP 503 and was not reproduced after backend reload; the cause remains unconfirmed. The API key stays in the ignored environment file. No public deployment or browser submission is established by this API test.
 
 Six mocked hosted-provider tests cover metadata-free image requests, system instructions, image and statement order, output validation, excluded reasoning text, and safe failures for billing, rate limits, invalid JSON, invalid schema, and missing candidates. They do not make Google API calls.
 
@@ -371,7 +375,7 @@ Six mocked hosted-provider tests cover metadata-free image requests, system inst
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Database and accounts | PostgreSQL, Drizzle, and Auth.js are selected. Hosting remains open. Email-link sign-in is implemented. Test migrations, extensions, database sessions, sign-up, sign-in, member writes, and admin-only moderation. |
 | Storage               | Hosted provider and region are on hold. Use local Garage for S3 compatibility tests. Check file limits, removal, caching, cleanup, and backup recovery before deployment.                                           |
-| Public AI             | Hosted tests are authorized but generation is blocked by depleted credits. Confirm live image input, event eligibility, privacy, quota, quality, and failures before release. Test Linux embedding resources separately. |
+| Public AI             | Hosted synthetic checks and the local API smoke test passed. Confirm event eligibility, privacy, quota, real-photo quality, insufficient-evidence handling, and sustained reliability before release. Test Linux embedding resources separately. |
 | Location              | Define service boundary and related-report radius. Test GPS conversion, missing or changed metadata, permission denial, poor accuracy, replacement photos, and opposite sides of roads.                             |
 | Accessibility         | Test keyboard, touch, focus, dialogs, screen readers, map controls, and contrast. English is the MVP language. Component choice alone does not establish accessibility.                                             |
 | Reliability           | Test privacy export, complete submission, direct links, service failures, container health, restarts, and recovery. Never substitute the original photo after export failure.                                       |
