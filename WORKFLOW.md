@@ -1,6 +1,6 @@
 # CivicLens: workflow and architecture
 
-Updated: 15 October 2026. Status: local MVP implemented. Public deployment is pending.
+Updated: 17 October 2026. Status: local MVP implemented. Public deployment is pending.
 
 Keep agreed decisions in this file. Keep exploration and alternatives in the project chat.
 
@@ -121,11 +121,11 @@ flowchart TB
     end
     subgraph EXTERNAL["External services: exact providers and access pending"]
         GEMMA["Hosted Gemma 4 through Gemini API<br/>Evidence checks; human review required"]
-        AUTH["Identity or email provider<br/>Sign-in method pending"]
+        AUTH["Email provider<br/>Auth.js email-link sign-in"]
         MAP["Map tiles and optional place search"]
     end
     UI <-->|"HTTPS: frontend files, API requests, and public results"| WEB
-    UI -.->|"Sign-in; method pending"| AUTH
+    UI -.->|"Verified email-link sign-in"| AUTH
     RULES -->|"Validate member identity"| AUTH
     RULES <-->|"Approved image and required details; findings"| GEMMA
     RULES <-->|"Records, location queries, and vectors"| DB
@@ -316,7 +316,7 @@ Sources: [GBA service directory](https://gba.karnataka.gov.in/), [BBMP official 
 
 The GBA indexed page lists Sahaaya 2.0, and the official BBMP app directory describes complaint filing and status access. Direct fetches of those pages timed out during this review. The DEPwD directory and FAQ were accessible. The FAQ recommends clear descriptions and location information; photos are recommended, not mandatory. It supports accessibility complaints about buildings, transport, and ICT.
 
-Before release, check the official entry links in a browser. Detailed external form steps remain unverified. If a route cannot be checked or is unavailable, show the source directory and state the limit. Do not add guessed buttons, escalation schedules, legal claims, response times, or phone numbers. Service existence does not guarantee jurisdiction or a successful outcome.
+On 17 October, the official GBA page loaded in the browser and listed Namma Bengaluru [Sahaaya 2.0] under Mobile App Links. Road guides now name that public section, which avoids the separate employee link. The DEPwD source directory was also reachable. App forms, road ownership, and submission outcomes remain unverified. Before release, check the official entry links again. Detailed external form steps remain unverified. If a route cannot be checked or is unavailable, show the source directory and state the limit. Do not add guessed buttons, escalation schedules, legal claims, response times, or phone numbers. Service existence does not guarantee jurisdiction or a successful outcome.
 
 ## Page structure
 
@@ -338,7 +338,7 @@ The browser uses MediaPipe on the main thread after the user selects face sugges
 
 The initial map boundary is a demo rectangle. Related-report search uses 200 metres. Validate both before public release. The local database stores an approved image and its report; it does not store the original file. AI previews expire after 30 minutes and have no server draft. Local database and object volumes persist across application restarts.
 
-Hosted Gemini tests, public hosting, full accessibility review, deletion and retention policy, backup recovery, and audio/video remain pending. The status policy below remains a recommendation. Do not claim production readiness from local checks.
+Hosted checks have passed for selected inputs, but service reliability remains limited. Public hosting, full accessibility review, deletion and retention policy, and backup recovery remain pending. Audio and video are deferred. The status policy below remains a recommendation. Do not claim production readiness from local checks.
 
 ## Privacy validation: 15 October 2026
 
@@ -362,6 +362,22 @@ The user supplied a saved PDF. It confirms that browser PDF export works. Its se
 
 The normal browser flow sends a new approved JPEG. The server cannot prove that an arbitrary API client obtained human approval; it validates inputs and removes metadata independently. No original-file fallback is permitted in the browser.
 
+## Finish plan: 17 and 18 October
+
+On 17 October, improve the existing product and test the local demo. Do not add audio, video input, more categories, or new providers. On 18 October, deploy the app, record the demo video, and submit before 15:30 IST. Deployment must include checks of the live configuration and data services.
+
+| Today                          | Result                                                                                                                                                                                                                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AI review and safe failure     | The hosted prompt requires arrays and a text evidence request. The system role is explicit. Retry HTTP 500, 502, 503, or 504 once after 750 ms, within the same 60-second limit. Billing, permission, quota, and invalid-output failures are not retried. No model switch or invented result is used. |
+| Complete local API flow        | Passed with hosted Gemma, local EmbeddingGemma, real sign-in, PostgreSQL, and private S3. Blank input received no category or publication receipt. The disposable report was hidden after all checks.                                                                                                 |
+| Real mobile browser flow       | Passed at 390 pixels: sign-in, approved image export, confirmed test point, hosted review, related-report search, and publication. The image and AI findings loaded in the report preview. Admin review hid the temporary report, and its public page then returned Issue not found.                  |
+| Interface and account failures | Connection and unreadable-response errors use clear messages. Failed AI review retains the approved photo and description. Failed sign-out reports an error before navigation. A signed-in member can continue after an already-used link. Email correction remains available after a link request.   |
+| Mobile navigation              | Map selection, sheet expansion, Escape, and report preview passed at 390 pixels. The preview had no horizontal overflow. These are viewport checks, not physical-device tests.                                                                                                                        |
+| PDF                            | The report preview loads the image, findings, history, sources, and print control. Inspect a newly saved PDF manually today. The browser tool cannot complete the system Save dialog.                                                                                                                 |
+| Repeatable test input          | `fixtures/road-damage.jpg` is a metadata-free CC0 reference image. Its source and limits are in `fixtures/README.md`. It is not a current Bengaluru incident.                                                                                                                                         |
+
+All 52 automated tests, type checks, lint, unused-code checks, and the production build passed. One full API run passed after the prompt and retry changes. A later repeat failed during blank-image review. Direct checks also found HTTP 500 errors with the alternate hosted model. Keep `gemma-4-26b-a4b-it` as the selected model; the alternate model has not earned a change. Passing checks do not establish sustained provider reliability. A service failure must leave the form available and prevent publication.
+
 ## Open decisions and release checks
 
 Hosted validation on 17 October 2026: the first API key listed `gemma-4-26b-a4b-it` and `gemma-4-31b-it`, but generation returned HTTP 402 with a depleted-prepayment message. The user replaced the key. The new key passed three synthetic image checks through the production adapter: a rectangle with unsupported incident claims, a blank image, and text with misleading instructions. These calls completed in approximately 5-10 seconds and returned valid schema output. They stated that incident evidence was missing; the misleading text did not establish a repair. These are limited sanity checks, not a real-photo quality benchmark.
@@ -372,7 +388,7 @@ Before the evidence-outcome change, the full local API smoke test passed with ho
 
 Evidence-outcome checks on 17 October 2026: hosted Gemma returned insufficient evidence with no category for a blank image, an unrelated drawing with unsupported claims, and a text-only instruction attack. The live API returned no publication receipt for a blank image. Hosted and local Gemma classified one real pothole reference photo as sufficient. Hosted inference completed in about 5 seconds; local inference completed in about 39 seconds at a 512-pixel input edge. The photo is [a CC0 image by Computerfan0 from County Monaghan, Ireland, in 2020](https://commons.wikimedia.org/wiki/File:Pothole_on_local_Road_in_County_Monaghan.jpg). It is test evidence, not a current Bengaluru report. These checks do not establish broad classification accuracy.
 
-The new full API test has not passed. Real-photo review requests returned service errors; a direct hosted request also returned HTTP 500. One attempt was interrupted by a development-server restart during a build. Local blank-image checks timed out. These failures remain release checks. No failed attempt published a test issue. Provider failure must retain the form and block publication.
+Before the final prompt and retry changes, the new full API test had not passed. Real-photo review requests returned service errors; a direct hosted request also returned HTTP 500. One attempt was interrupted by a development-server restart during a build. Local blank-image checks timed out. These failures remain release checks. No failed attempt published a test issue. Provider failure must retain the form and block publication.
 
 Regression checks cover contradictory evidence outcomes, old-schema receipts, omitted reasons, missing receipts, publication rejection before content or object writes, and recovery after photo replacement. Earlier saved reviews remain readable. All 37 automated tests, type checks, lint, unused-code checks, and the production build passed. The form checks use a simulated browser; a new manual browser submission has not been verified. User review remains required even when the model reports sufficient context.
 

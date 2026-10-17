@@ -46,7 +46,7 @@ Local Gemma receives a metadata-free derivative with a longest edge of 512 pixel
 
 The default development model path uses the installed `gemma4:12b-mlx` and `embeddinggemma-2:740m` through Ollama. Model failures are shown explicitly. No fake AI fallback is used. The embedding adapter uses 768-dimensional vectors and records its model/prefix configuration. A stored job retries failed indexing, with a bounded attempt count. Normal issue reading does not require AI availability.
 
-Hosted validation passed on 17 October 2026 with `gemma-4-26b-a4b-it` after the user replaced a key whose project had depleted credits. Three synthetic image checks and the full local API smoke test used real hosted inference. One earlier full-flow attempt returned a service error; its cause remains unconfirmed. Real-photo quality, sustained reliability, and public deployment remain unverified. Mocked tests separately cover hosted requests, metadata removal, result validation, and safe failures. Do not assume local and hosted output quality is equal. Keep `GEMINI_API_KEY` server-only in the ignored `.env`. Provider privacy review and event eligibility checks remain open. Storage hosting and change comparison remain on hold.
+Hosted validation on 17 October 2026 used `gemma-4-26b-a4b-it` after a key replacement. A full local API check and a real mobile-browser submission passed. A later API repeat failed during blank-image review, so sustained reliability is not established. The adapter retries HTTP 500, 502, 503, or 504 once within its original time limit. Invalid output, billing, permissions, and quota errors fail safely. No model fallback is used. Mocked tests cover request privacy, bounded retries, strict output validation, and safe errors. Keep `GEMINI_API_KEY` server-only in the ignored `.env`. Provider privacy review, event eligibility, public deployment, and broader image quality remain open.
 
 Garage is local S3-compatible development storage. Its port is bound to loopback. The application serves images through visibility checks; buckets are not public websites. Keep the configurable S3 interface when choosing hosted storage. Local volumes persist data; do not remove volumes unless you intend to remove that local data.
 
@@ -54,7 +54,7 @@ Garage is local S3-compatible development storage. Its port is bound to loopback
 
 Original photos, GPS parsing, face suggestions, and solid covers stay in the browser. The user approves a fresh JPEG before AI processing. File processing removes source metadata. Manual covers remain available if face suggestions fail. Detection does not certify complete privacy.
 
-There are no server drafts. A refresh or closed tab can lose unfinished work. The analysis endpoint returns an expiring signed receipt bound to the member, approved bytes, original description, model, and findings. The final write validates the receipt and keeps the reviewed description separate from the model suggestion. Repeated submissions use idempotency keys.
+There are no server drafts. A refresh or closed tab can lose unfinished work. Insufficient evidence has no category and cannot be published. Replace the image and run review again. Earlier stored AI reviews have no recorded evidence assessment. For sufficient civic context, the analysis endpoint returns an expiring signed receipt bound to the member, approved bytes, original description, model, and findings. The final write validates the receipt and keeps the reviewed description separate from the model suggestion. Repeated submissions use idempotency keys.
 
 Support and dated observations are separate records. Admin visibility controls do not establish resolution. Hidden issue images stop being served through the application. Previously downloaded images or PDFs cannot be revoked.
 
@@ -80,13 +80,13 @@ Editor component tests check photo replacement, GPS removal, manual-coordinate c
 
 The backend tests check signed receipts, tampering, expiry, cross-origin writes, unauthenticated submission, validation, and API fallbacks.
 
-For a live local smoke test, start the app and services, then provide a non-sensitive JPEG fixture:
+For a live local smoke test, start the app and services, then use the included CC0 reference image. Its source and usage limits are in `fixtures/README.md`:
 
 ```sh
-TEST_IMAGE=/absolute/path/to/approved-test.jpg pnpm --filter @civiclens/backend test:smoke
+TEST_IMAGE="$PWD/fixtures/road-damage.jpg" pnpm --filter @civiclens/backend test:smoke
 ```
 
-This test uses the real local email flow, the configured Gemma provider, EmbeddingGemma, PostgreSQL, and Garage. It checks that the analysis receipt names the configured model. It creates a test issue, adds evidence and community actions, checks moderation access, and hides its test issue afterwards. Use the local development database only. The test email links and session cookies are not printed.
+This test uses the real local email flow, the configured Gemma provider, EmbeddingGemma, PostgreSQL, and Garage. It checks that blank input has no publication receipt and that a valid analysis receipt names the configured model. It creates a test issue, adds evidence and community actions, checks moderation access, and hides its test issue afterwards. Use the local development database only. The test email links and session cookies are not printed.
 
 ## Container build
 

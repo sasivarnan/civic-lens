@@ -2,25 +2,34 @@ export async function api<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch("/api" + path, {
-    credentials: "same-origin",
-    ...options,
-    headers: {
-      ...(options.body instanceof FormData
-        ? {}
-        : { "Content-Type": "application/json" }),
-      ...options.headers,
-    },
+  let response: Response
+  try {
+    response = await fetch("/api" + path, {
+      credentials: "same-origin",
+      ...options,
+      headers: {
+        ...(options.body instanceof FormData
+          ? {}
+          : { "Content-Type": "application/json" }),
+        ...options.headers,
+      },
+    })
+  } catch {
+    throw new Error(
+      "Cannot reach CivicLens. Check your connection and try again. Your unfinished form is still on this device."
+    )
+  }
+  const data = await response.json().catch(() => {
+    throw new Error(
+      "CivicLens returned an unreadable response. Please try again."
+    )
   })
-  const data = await response
-    .json()
-    .catch(() => ({ error: "The service returned an unreadable response." }))
   if (!response.ok) throw new Error(data.error ?? "The request failed.")
   return data as T
 }
 export async function sendEmailLink(email: string) {
   const { csrfToken } = await api<{ csrfToken: string }>("/auth/csrf")
-  const r = await fetch("/api/auth/signin/nodemailer", {
+  const data = await api<{ url?: string }>("/auth/signin/nodemailer", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -32,13 +41,12 @@ export async function sendEmailLink(email: string) {
       callbackUrl: location.origin + "/report/new",
     }),
   })
-  const data = await r.json().catch(() => ({}))
-  if (!r.ok || data.url?.includes("error="))
+  if (typeof data.url !== "string" || data.url.includes("error="))
     throw new Error("The sign-in link could not be sent. Please try again.")
 }
 export async function signOut() {
   const { csrfToken } = await api<{ csrfToken: string }>("/auth/csrf")
-  await fetch("/api/auth/signout", {
+  await api("/auth/signout", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",

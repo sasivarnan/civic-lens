@@ -92,6 +92,8 @@ function Loading() {
 }
 function Root() {
   const [session, setSession] = useState<Session | null>(null)
+  const [authError, setAuthError] = useState("")
+  const [signingOut, setSigningOut] = useState(false)
   useEffect(() => {
     void api<Session>("/auth/session")
       .then(setSession)
@@ -121,7 +123,14 @@ function Root() {
           {session?.user ? (
             <button
               className="quiet-button"
-              onClick={() => void signOut()}
+              disabled={signingOut}
+              onClick={() => {
+                setSigningOut(true)
+                setAuthError("")
+                void signOut()
+                  .catch((error: Error) => setAuthError(error.message))
+                  .finally(() => setSigningOut(false))
+              }}
               aria-label="Sign out"
             >
               <LogOut size={17} />
@@ -132,6 +141,7 @@ function Root() {
         </nav>
       </header>
       <main id="main">
+        <ErrorText error={authError} />
         <Outlet />
       </main>
       <footer className="site-footer">
@@ -1458,6 +1468,7 @@ function Detail({
   )
 }
 function AuthPage({ signup = false }: { signup?: boolean }) {
+  const session = useContext(SessionContext)
   const [email, setEmail] = useState(""),
     [busy, setBusy] = useState(false),
     [sent, setSent] = useState(
@@ -1468,16 +1479,24 @@ function AuthPage({ signup = false }: { signup?: boolean }) {
         ? "Sign-in was not completed. Request a new link."
         : ""
     )
+  if (session?.user)
+    return (
+      <div className="prose-page">
+        <h1>Already signed in</h1>
+        <p>Your account is ready. You can continue with your report.</p>
+        <Link to="/report/new">Continue to reporting</Link>
+      </div>
+    )
   return (
     <div className="auth-page">
       <div className="auth-art">
         <span className="brand-symbol">
           <Layers />
         </span>
-        <h1>
+        <p className="auth-tagline">
           A better record.
           <br />A stronger community.
-        </h1>
+        </p>
         <p>Observe. Review. Contribute.</p>
       </div>
       <Card>
@@ -1490,8 +1509,12 @@ function AuthPage({ signup = false }: { signup?: boolean }) {
           {sent ? (
             <div className="notice" role="status">
               <Check size={19} />
-              Check your email. Use the link within 15 minutes. For local
-              development, the message is in the configured test mailbox.
+              <div>
+                <p>Check your email. Use the link within 15 minutes.</p>
+                <Button variant="link" onClick={() => setSent(false)}>
+                  Use a different email
+                </Button>
+              </div>
             </div>
           ) : (
             <form

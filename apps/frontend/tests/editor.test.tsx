@@ -274,3 +274,53 @@ it("blocks publication after insufficient evidence and allows a new review", asy
   await screen.findByLabelText("Reviewed category")
   expect(screen.queryByText("Insufficient evidence")).toBeNull()
 })
+it("keeps the approved photo and description after a failed AI request", async () => {
+  vi.mocked(fetch).mockImplementation(
+    async (url) =>
+      new Response(
+        JSON.stringify(
+          String(url).endsWith("/analyses")
+            ? {
+                error:
+                  "The AI service is unavailable. Your form is still on this device.",
+              }
+            : { user: { id: "test-member", role: "member" } }
+        ),
+        {
+          status: String(url).endsWith("/analyses") ? 503 : 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      )
+  )
+  await openEditor()
+  await choose(photo("gps.jpg"))
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Use photo location" })
+  )
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: /I checked this incident point/ })
+  )
+  fireEvent.change(screen.getByLabelText("What did you observe?"), {
+    target: { value: "Synthetic road evidence test." },
+  })
+  await approve()
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review evidence with Gemma" })
+  )
+  await screen.findByRole("alert")
+  expect(
+    (screen.getByLabelText("What did you observe?") as HTMLTextAreaElement)
+      .value
+  ).toBe("Synthetic road evidence test.")
+  expect(
+    screen.getByRole("img", { name: "Exact privacy-edited upload copy" })
+  ).toBeTruthy()
+  expect(
+    (
+      screen.getByRole("button", {
+        name: "Review evidence with Gemma",
+      }) as HTMLButtonElement
+    ).disabled
+  ).toBe(false)
+  expect(screen.queryByRole("button", { name: "Publish issue" })).toBeNull()
+})

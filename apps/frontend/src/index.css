@@ -916,7 +916,7 @@ figcaption {
   justify-content: center;
   align-items: flex-start;
 }
-.auth-art h1 {
+.auth-art .auth-tagline {
   font-size: 36px;
   line-height: 1.15;
   margin: 25px 0;

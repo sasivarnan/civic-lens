@@ -126,11 +126,11 @@ export const guides: Record<(typeof categories)[number], Guide> = {
     steps: [
       "Review the photo, incident point, and observation date.",
       "Save this report as a PDF for your records.",
-      "Open the official GBA website and find Sahaaya 2.0 (Public Grievance). Follow its current instructions.",
+      "On the official GBA website, find Mobile App Links. Select Namma Bengaluru [Sahaaya 2.0]. Follow the app instructions.",
       "Keep any acknowledgement for your own follow-up.",
     ],
     source: "https://gba.karnataka.gov.in/",
-    reviewedAt: "2026-10-15",
+    reviewedAt: "2026-10-17",
     limitation:
       "CivicLens does not submit a government complaint. Road ownership, complaint categories, PDF acceptance, and response time are not confirmed.",
   },
@@ -152,11 +152,11 @@ export const guides: Record<(typeof categories)[number], Guide> = {
     steps: [
       "Review the photo, incident point, and observation date.",
       "Describe visible damage without estimating depth from the photo.",
-      "Open the official GBA website and find Sahaaya 2.0 (Public Grievance). Follow its current instructions.",
+      "On the official GBA website, find Mobile App Links. Select Namma Bengaluru [Sahaaya 2.0]. Follow the app instructions.",
       "Keep any acknowledgement for your own follow-up.",
     ],
     source: "https://gba.karnataka.gov.in/",
-    reviewedAt: "2026-10-15",
+    reviewedAt: "2026-10-17",
     limitation:
       "The service directory is confirmed. Detailed form steps and the responsible road agency remain unverified. No repair deadline or government action is promised.",
   },
