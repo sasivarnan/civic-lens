@@ -3,6 +3,17 @@ export function Findings({ analysis }: { analysis: Analysis }) {
   return (
     <div className="findings">
       <p className="eyebrow">AI suggestion · review required</p>
+      {analysis.evidenceStatus === "insufficient" && (
+        <p role="status" className="notice">
+          <strong>Insufficient evidence</strong>. The image does not provide
+          enough visible context for a civic category.
+        </p>
+      )}
+      {!analysis.evidenceStatus && (
+        <p className="text-xs text-muted-foreground">
+          This earlier AI review has no recorded evidence assessment.
+        </p>
+      )}
       {(
         [
           ["Visible observations", analysis.observations],

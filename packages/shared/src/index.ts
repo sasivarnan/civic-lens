@@ -17,15 +17,40 @@ export const locationSchema = z.object({
   source: z.enum(["photo_gps", "device", "map", "coordinates"]),
   confirmed: z.literal(true),
 });
-export const analysisSchema = z.object({
-  category: z.enum(categories),
-  observations: z.array(z.string().max(500)).max(8),
-  claims: z.array(z.string().max(500)).max(8),
-  conflicts: z.array(z.string().max(500)).max(8),
-  unknowns: z.array(z.string().max(500)).max(8),
-  nextEvidence: z.string().max(700),
-});
+export const analysisSchema = z
+  .object({
+    evidenceStatus: z.enum(["sufficient", "insufficient"]),
+    category: z.enum(categories).nullable(),
+    observations: z.array(z.string().max(500)).max(8),
+    claims: z.array(z.string().max(500)).max(8),
+    conflicts: z.array(z.string().max(500)).max(8),
+    unknowns: z.array(z.string().max(500)).max(8),
+    nextEvidence: z.string().max(700),
+  })
+  .superRefine((analysis, ctx) => {
+    if (
+      (analysis.evidenceStatus === "insufficient") !==
+      (analysis.category === null)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Insufficient evidence must have no category; sufficient evidence requires a category.",
+      });
+    if (
+      analysis.evidenceStatus === "insufficient" &&
+      (!analysis.unknowns.some((reason) => reason.trim()) ||
+        !analysis.nextEvidence.trim())
+    )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Insufficient evidence requires a reason and a useful evidence request.",
+      });
+  });
 export type Analysis = z.infer<typeof analysisSchema>;
+export const isPublishableAnalysis = (analysis: Analysis | null | undefined) =>
+  analysis?.evidenceStatus === "sufficient" && analysis.category !== null;
 export const today = () =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",

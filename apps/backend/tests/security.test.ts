@@ -3,6 +3,7 @@ import { signReceipt, verifyReceipt, analyzedHash } from "../src/security.js";
 import { reportSchema, observationDateSchema, today } from "@civiclens/shared";
 import { app } from "../src/app.js";
 const analysis = {
+  evidenceStatus: "sufficient" as const,
   category: "pothole" as const,
   observations: ["Image 1: damaged surface."],
   claims: [],
@@ -90,4 +91,37 @@ it("uses the Bengaluru calendar date at the UTC day boundary", () => {
   expect(today()).toBe("2026-10-15");
   expect(observationDateSchema.safeParse("2026-10-15").success).toBe(true);
   expect(observationDateSchema.safeParse("2026-10-16").success).toBe(false);
+});
+
+it("represents insufficient evidence without forcing a category and rejects contradictory outcomes", async () => {
+  const { analysisSchema, isPublishableAnalysis } =
+    await import("@civiclens/shared");
+  const insufficient = {
+    ...analysis,
+    evidenceStatus: "insufficient",
+    category: null,
+    unknowns: ["No civic context is visible."],
+  };
+  expect(analysisSchema.safeParse(insufficient).success).toBe(true);
+  expect(isPublishableAnalysis(analysisSchema.parse(insufficient))).toBe(false);
+  expect(isPublishableAnalysis(analysis)).toBe(true);
+  expect(
+    analysisSchema.safeParse({ ...insufficient, category: "pothole" }).success,
+  ).toBe(false);
+  expect(
+    analysisSchema.safeParse({ ...analysis, category: null }).success,
+  ).toBe(false);
+  expect(
+    analysisSchema.safeParse({ ...insufficient, unknowns: [] }).success,
+  ).toBe(false);
+  expect(
+    analysisSchema.safeParse({ ...insufficient, nextEvidence: "" }).success,
+  ).toBe(false);
+  expect(
+    analysisSchema.safeParse({ ...insufficient, unknowns: ["   "] }).success,
+  ).toBe(false);
+  const legacy = { ...analysis } as Partial<typeof analysis>;
+  delete legacy.evidenceStatus;
+  expect(analysisSchema.safeParse(legacy).success).toBe(false);
+  expect(isPublishableAnalysis(legacy as typeof analysis)).toBe(false);
 });

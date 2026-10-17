@@ -17,7 +17,8 @@ flowchart TB
         APPROVE["Approve final public report"]
         VIEW["Map, evidence history, action guide, and PDF export"]
         PHOTO --> PRIVACY --> LOCATION
-        REVIEW --> CHOICE --> APPROVE
+        REVIEW -->|"Enough visible civic context"| CHOICE --> APPROVE
+        REVIEW -->|"Insufficient evidence: replace photo"| PHOTO
     end
     subgraph BACKEND["Backend: Hono on Node.js"]
         ANALYZE["Validate approved input; return AI preview"]
@@ -77,18 +78,18 @@ Hosted Gemma through the Gemini API is the assumed deployment direction. The use
 
 ## End-to-end workflow
 
-| Step                     | Required behaviour                                                                                                                                                                                                                                                |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. Select photo          | Select one still photo. Read GPS locally, if present, before metadata removal. Keep the original on the device.                                                                                                                                                   |
-| 2. Review privacy        | MediaPipe suggests face covers. The user adjusts solid covers for faces, number plates, addresses, and other private details. Manual covering remains available if detection fails.                                                                               |
-| 3. Approve image         | Export a new file with permanent covers and a generated filename. Remove sensitive metadata, GPS, and stored thumbnails. Show the exact exported image and require approval. Block upload if export fails.                                                        |
-| 4. Add details           | Confirm the incident point, description, and observation date. Explain that the confirmed location will be public. Check text for private details.                                                                                                                |
-| 5. Review AI findings    | Gemma 4 suggests a category, impacts, image-linked observations, resident claims, uncertainty, conflicts, and useful additional evidence. The user corrects and approves the content. Keep AI suggestions separate and clearly labelled.                          |
-| 6. Check related reports | Filter public reports by confirmed location. EmbeddingGemma ranks the candidates using reviewed text. Show up to three with photo, location, date, and reported status. Permit no match.                                                                          |
-| 7. Publish               | The user chooses an existing issue for later evidence or a separate issue. Show the final public content and require approval before publication.                                                                                                                 |
-| 8. Community actions     | **Confirm** records a member's observation and date. **Support** requests action without claiming observation. **Add evidence** records a later update through the same privacy process. Keep counts separate and prevent repeated count increases by one member. |
-| 9. Show next steps       | Show a fixed guide selected by category and supported area, with official sources and a review date. State when no checked guide applies.                                                                                                                         |
-| 10. Share                | Provide a public link and print layout for Save as PDF. Include approved evidence, location, dates, history, labelled AI findings, and guide sources. Identify privacy-edited images as edited copies.                                                            |
+| Step                     | Required behaviour                                                                                                                                                                                                                                                                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Select photo          | Select one still photo. Read GPS locally, if present, before metadata removal. Keep the original on the device.                                                                                                                                                                                                                        |
+| 2. Review privacy        | MediaPipe suggests face covers. The user adjusts solid covers for faces, number plates, addresses, and other private details. Manual covering remains available if detection fails.                                                                                                                                                    |
+| 3. Approve image         | Export a new file with permanent covers and a generated filename. Remove sensitive metadata, GPS, and stored thumbnails. Show the exact exported image and require approval. Block upload if export fails.                                                                                                                             |
+| 4. Add details           | Confirm the incident point, description, and observation date. Explain that the confirmed location will be public. Check text for private details.                                                                                                                                                                                     |
+| 5. Review AI findings    | Gemma 4 returns an evidence outcome, category or no category, image-linked observations, resident claims, uncertainty, conflicts, and useful additional evidence. Insufficient evidence blocks publication and requests a better photo. The user corrects and approves the content. Keep AI suggestions separate and clearly labelled. |
+| 6. Check related reports | Filter public reports by confirmed location. EmbeddingGemma ranks the candidates using reviewed text. Show up to three with photo, location, date, and reported status. Permit no match.                                                                                                                                               |
+| 7. Publish               | The user chooses an existing issue for later evidence or a separate issue. Show the final public content and require approval before publication.                                                                                                                                                                                      |
+| 8. Community actions     | **Confirm** records a member's observation and date. **Support** requests action without claiming observation. **Add evidence** records a later update through the same privacy process. Keep counts separate and prevent repeated count increases by one member.                                                                      |
+| 9. Show next steps       | Show a fixed guide selected by category and supported area, with official sources and a review date. State when no checked guide applies.                                                                                                                                                                                              |
+| 10. Share                | Provide a public link and print layout for Save as PDF. Include approved evidence, location, dates, history, labelled AI findings, and guide sources. Identify privacy-edited images as edited copies.                                                                                                                                 |
 
 An image edit cancels its upload approval. A location change cancels its confirmation and related-report results. Photo replacement discards old GPS suggestions and cancels location approval based on that photo.
 
@@ -119,7 +120,7 @@ flowchart TB
         OBJECTS[("Private S3-compatible storage<br/>Garage locally; hosted provider on hold")]
     end
     subgraph EXTERNAL["External services: exact providers and access pending"]
-        GEMMA["Hosted Gemma 4 through Gemini API<br/>Quality tests deferred"]
+        GEMMA["Hosted Gemma 4 through Gemini API<br/>Evidence checks; human review required"]
         AUTH["Identity or email provider<br/>Sign-in method pending"]
         MAP["Map tiles and optional place search"]
     end
@@ -254,29 +255,29 @@ Account verification, recovery, and callback routes depend on the account provid
 
 All routes use the `/api` prefix. Submission and AI routes require member access. Public reads return published content only. Mount the Auth.js handler under `/api/auth/*`. It handles provider sign-in, callbacks, session, sign-out, and required anti-forgery checks. Use the selected email-link sign-in method.
 
-| Method and route                      | Purpose                                                                                                                                            |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /issues`                         | Published summaries by map bounds, filters, and cursor                                                                                             |
-| `GET /issues/:id`                     | Public content, AI findings, guide, counts, and paged history/evidence; accept a history cursor                                                    |
-| `GET /assets/:id`                     | Approved image bytes after public visibility checks                                                                                                |
-| `POST /analyses`                      | Validate approved photo and description; return Gemma preview and signed analysis receipt. Conditional comparison uses selected existing evidence. |
-| `POST /related-reports`               | Validate confirmed location and reviewed text; filter public reports, then rank similarity                                                         |
-| `POST /issues`                        | Validate final submission, save approved photo and content, and publish a new issue                                                                |
-| `POST /issues/:id/evidence`           | Validate final submission and add later evidence to a visible issue                                                                                |
-| `PUT /issues/:id/reactions`           | Set current member's support flag and optional dated confirmation independently; permit withdrawal                                                 |
-| `POST /issues/:id/flags`              | Report unsafe content; optionally identify an evidence item                                                                                        |
-| Auth.js `/auth/*` routes              | Sign-in, callbacks, session, sign-out, and anti-forgery controls; expose only safe member fields                                                   |
-| `GET /moderation/flags`               | Admin-only, paged abuse queue                                                                                                                      |
-| `PATCH /moderation/content/:type/:id` | Admin-only visibility changes; issue status changes follow the selected policy and require an audit event                                          |
-| `GET /health`                         | Deployment health without secrets                                                                                                                  |
+| Method and route                      | Purpose                                                                                                                          |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /issues`                         | Published summaries by map bounds, filters, and cursor                                                                           |
+| `GET /issues/:id`                     | Public content, AI findings, guide, counts, and paged history/evidence; accept a history cursor                                  |
+| `GET /assets/:id`                     | Approved image bytes after public visibility checks                                                                              |
+| `POST /analyses`                      | Validate approved photo and description; return Gemma preview; issue a signed receipt only when enough civic context is visible. |
+| `POST /related-reports`               | Validate confirmed location and reviewed text; filter public reports, then rank similarity                                       |
+| `POST /issues`                        | Validate final submission, save approved photo and content, and publish a new issue                                              |
+| `POST /issues/:id/evidence`           | Validate final submission and add later evidence to a visible issue                                                              |
+| `PUT /issues/:id/reactions`           | Set current member's support flag and optional dated confirmation independently; permit withdrawal                               |
+| `POST /issues/:id/flags`              | Report unsafe content; optionally identify an evidence item                                                                      |
+| Auth.js `/auth/*` routes              | Sign-in, callbacks, session, sign-out, and anti-forgery controls; expose only safe member fields                                 |
+| `GET /moderation/flags`               | Admin-only, paged abuse queue                                                                                                    |
+| `PATCH /moderation/content/:type/:id` | Admin-only visibility changes; issue status changes follow the selected policy and require an audit event                        |
+| `GET /health`                         | Deployment health without secrets                                                                                                |
 
 ### Preview, then final submission
 
 1. The browser keeps unfinished form state and image bytes in memory.
 2. `POST /analyses` processes only the locally approved image and required details. Do not save a server draft or permanent preview image. Discard request buffers after processing; provider retention terms still apply.
-3. Return model findings with an expiring signed receipt tied to the member, analyzed inputs, model, and findings. Do not trust AI findings supplied by the browser without this receipt.
+3. Return model findings. An insufficient result has no category and no publication receipt. Show the reason and request a clearer or more relevant photo. For sufficient context, return an expiring signed receipt tied to the member, analyzed inputs, model, and findings. Sufficient means enough context for classification; it does not establish truth. Do not trust AI findings supplied by the browser without this receipt.
 4. The user corrects the report, requests related reports, and approves the final public content. Keep original analyzed statements separate from the corrected report. Changed AI inputs invalidate the receipt; changed location invalidates related-report results.
-5. `POST /issues` accepts the approved image, confirmed location, observation date, reviewed report, and receipt. Check authentication, field values, file type and size, image digest, receipt validity, and input revisions before publication. Record user corrections separately from model findings.
+5. `POST /issues` accepts the approved image, confirmed location, observation date, reviewed report, and receipt. Check authentication, field values, file type and size, image digest, receipt validity, sufficient evidence outcome, and input revisions before publication. Record user corrections separately from model findings.
 6. The backend saves the private image, then commits report content, asset references, history, and a vector-update job in one database transaction. Return the public issue ID. Object storage is outside that transaction; clean up unused objects after failures.
 
 Use the same checks for later evidence. Analysis and comparison are suggestions only; the final write cannot silently replace user-approved content or resolve an issue.
@@ -365,22 +366,28 @@ The normal browser flow sends a new approved JPEG. The server cannot prove that 
 
 Hosted validation on 17 October 2026: the first API key listed `gemma-4-26b-a4b-it` and `gemma-4-31b-it`, but generation returned HTTP 402 with a depleted-prepayment message. The user replaced the key. The new key passed three synthetic image checks through the production adapter: a rectangle with unsupported incident claims, a blank image, and text with misleading instructions. These calls completed in approximately 5-10 seconds and returned valid schema output. They stated that incident evidence was missing; the misleading text did not establish a repair. These are limited sanity checks, not a real-photo quality benchmark.
 
-The schema still requires a civic category for an unrelated or blank image. The model selected a category while stating insufficient evidence. This is a known classification limit; category selection must not imply that the image establishes an incident. An explicit insufficient-evidence outcome remains a follow-up item.
+The earlier schema forced a civic category for blank or unrelated images. The schema now permits an explicit insufficient result with no category. Both provider prompts use this outcome. The server gives no publication receipt for insufficient evidence and rejects such findings for new issues and later evidence before image or content writes. The form hides publication controls and requests a better photo. Earlier saved reviews remain readable with a note that no evidence assessment was recorded. Earlier unused receipts require a new AI review. No database migration is required.
 
-The full local API smoke test passed with hosted Gemma, local EmbeddingGemma, real email-link sign-in, PostgreSQL, and private S3 storage. It covered signed review receipts, publication, repeated submissions, image access, later evidence, related-report retrieval, separate support and observations, and admin visibility checks. The receipt named the configured hosted model. The synthetic issue was hidden afterwards. An earlier full-flow attempt returned HTTP 503 and was not reproduced after backend reload; the cause remains unconfirmed. The API key stays in the ignored environment file. No public deployment or browser submission is established by this API test.
+Before the evidence-outcome change, the full local API smoke test passed with hosted Gemma, local EmbeddingGemma, real email-link sign-in, PostgreSQL, and private S3 storage. It covered signed review receipts, publication, repeated submissions, image access, later evidence, related-report retrieval, separate support and observations, and admin visibility checks. The receipt named the configured hosted model. The synthetic issue was hidden afterwards. An earlier full-flow attempt returned HTTP 503 and was not reproduced after backend reload; the cause remains unconfirmed. The API key stays in the ignored environment file. No public deployment or browser submission is established by this API test.
+
+Evidence-outcome checks on 17 October 2026: hosted Gemma returned insufficient evidence with no category for a blank image, an unrelated drawing with unsupported claims, and a text-only instruction attack. The live API returned no publication receipt for a blank image. Hosted and local Gemma classified one real pothole reference photo as sufficient. Hosted inference completed in about 5 seconds; local inference completed in about 39 seconds at a 512-pixel input edge. The photo is [a CC0 image by Computerfan0 from County Monaghan, Ireland, in 2020](https://commons.wikimedia.org/wiki/File:Pothole_on_local_Road_in_County_Monaghan.jpg). It is test evidence, not a current Bengaluru report. These checks do not establish broad classification accuracy.
+
+The new full API test has not passed. Real-photo review requests returned service errors; a direct hosted request also returned HTTP 500. One attempt was interrupted by a development-server restart during a build. Local blank-image checks timed out. These failures remain release checks. No failed attempt published a test issue. Provider failure must retain the form and block publication.
+
+Regression checks cover contradictory evidence outcomes, old-schema receipts, omitted reasons, missing receipts, publication rejection before content or object writes, and recovery after photo replacement. Earlier saved reviews remain readable. All 37 automated tests, type checks, lint, unused-code checks, and the production build passed. The form checks use a simulated browser; a new manual browser submission has not been verified. User review remains required even when the model reports sufficient context.
 
 Six mocked hosted-provider tests cover metadata-free image requests, system instructions, image and statement order, output validation, excluded reasoning text, and safe failures for billing, rate limits, invalid JSON, invalid schema, and missing candidates. They do not make Google API calls.
 
-| Area                  | Required decision or check                                                                                                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Database and accounts | PostgreSQL, Drizzle, and Auth.js are selected. Hosting remains open. Email-link sign-in is implemented. Test migrations, extensions, database sessions, sign-up, sign-in, member writes, and admin-only moderation. |
-| Storage               | Hosted provider and region are on hold. Use local Garage for S3 compatibility tests. Check file limits, removal, caching, cleanup, and backup recovery before deployment.                                           |
-| Public AI             | Hosted synthetic checks and the local API smoke test passed. Confirm event eligibility, privacy, quota, real-photo quality, insufficient-evidence handling, and sustained reliability before release. Test Linux embedding resources separately. |
-| Location              | Define service boundary and related-report radius. Test GPS conversion, missing or changed metadata, permission denial, poor accuracy, replacement photos, and opposite sides of roads.                             |
-| Accessibility         | Test keyboard, touch, focus, dialogs, screen readers, map controls, and contrast. English is the MVP language. Component choice alone does not establish accessibility.                                             |
-| Reliability           | Test privacy export, complete submission, direct links, service failures, container health, restarts, and recovery. Never substitute the original photo after export failure.                                       |
-| Community and privacy | Confirm the recommended status policy. Define content review, temporary-upload cleanup, retention, deletion, and abuse controls. Keep original photos and unnecessary personal data out of logs.                    |
-| Optional features     | Later-evidence comparison is on hold. Rich link previews, browser embeddings, automatic plate detection, audio/video, Kannada, and image similarity are deferred.                                                   |
+| Area                  | Required decision or check                                                                                                                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database and accounts | PostgreSQL, Drizzle, and Auth.js are selected. Hosting remains open. Email-link sign-in is implemented. Test migrations, extensions, database sessions, sign-up, sign-in, member writes, and admin-only moderation.     |
+| Storage               | Hosted provider and region are on hold. Use local Garage for S3 compatibility tests. Check file limits, removal, caching, cleanup, and backup recovery before deployment.                                               |
+| Public AI             | Hosted synthetic checks and the local API smoke test passed. Confirm event eligibility, privacy, quota, broader real-photo quality and sustained reliability before release. Test Linux embedding resources separately. |
+| Location              | Define service boundary and related-report radius. Test GPS conversion, missing or changed metadata, permission denial, poor accuracy, replacement photos, and opposite sides of roads.                                 |
+| Accessibility         | Test keyboard, touch, focus, dialogs, screen readers, map controls, and contrast. English is the MVP language. Component choice alone does not establish accessibility.                                                 |
+| Reliability           | Test privacy export, complete submission, direct links, service failures, container health, restarts, and recovery. Never substitute the original photo after export failure.                                           |
+| Community and privacy | Confirm the recommended status policy. Define content review, temporary-upload cleanup, retention, deletion, and abuse controls. Keep original photos and unnecessary personal data out of logs.                        |
+| Optional features     | Later-evidence comparison is on hold. Rich link previews, browser embeddings, automatic plate detection, audio/video, Kannada, and image similarity are deferred.                                                       |
 
 Local model tests found category errors, unsupported claims, Kannada errors, and unclear similarity results. User review remains required. These tests do not establish browser support or public-service reliability. Browser coordinate entry and map display are implemented. GPS metadata variants and device permission outcomes still need a complete test set.
 

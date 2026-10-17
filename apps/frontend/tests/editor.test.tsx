@@ -203,3 +203,74 @@ it("blocks corrupt image approval without an AI request", async () => {
     true
   )
 })
+it("blocks publication after insufficient evidence and allows a new review", async () => {
+  const analysis = {
+    evidenceStatus: "insufficient",
+    category: null,
+    observations: ["The image is blank."],
+    claims: [],
+    conflicts: [],
+    unknowns: ["No road context is visible."],
+    nextEvidence: "Select a road photo.",
+  }
+  let sufficient = false
+  vi.mocked(fetch).mockImplementation(
+    async (url) =>
+      new Response(
+        JSON.stringify(
+          String(url).endsWith("/analyses")
+            ? {
+                analysis: sufficient
+                  ? {
+                      ...analysis,
+                      evidenceStatus: "sufficient",
+                      category: "pothole",
+                    }
+                  : analysis,
+                receipt: sufficient ? "new-receipt" : "",
+                model: "test",
+              }
+            : { user: { id: "test-member", role: "member" } }
+        ),
+        { headers: { "Content-Type": "application/json" } }
+      )
+  )
+  await openEditor()
+  await choose(photo("gps.jpg"))
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Use photo location" })
+  )
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: /I checked this incident point/ })
+  )
+  fireEvent.change(screen.getByLabelText("What did you observe?"), {
+    target: { value: "Synthetic evidence review test." },
+  })
+  await approve()
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review evidence with Gemma" })
+  )
+  await screen.findByText("Insufficient evidence")
+  expect(screen.queryByRole("button", { name: /Publish/ })).toBeNull()
+  expect(screen.queryByLabelText("Reviewed category")).toBeNull()
+  expect(
+    vi.mocked(fetch).mock.calls.some(([url]) => String(url).endsWith("/issues"))
+  ).toBe(false)
+  sufficient = true
+  await choose(photo("replacement.jpg"))
+  fireEvent.change(screen.getByLabelText("Latitude"), {
+    target: { value: "12.9716" },
+  })
+  fireEvent.change(screen.getByLabelText("Longitude"), {
+    target: { value: "77.5946" },
+  })
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: /I checked this incident point/ })
+  )
+  await approve()
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review evidence with Gemma" })
+  )
+  await screen.findByLabelText("Reviewed category")
+  expect(screen.queryByText("Insufficient evidence")).toBeNull()
+})

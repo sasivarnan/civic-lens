@@ -10,6 +10,7 @@ import {
   categories,
   statuses,
   guides,
+  isPublishableAnalysis,
   type Issue,
 } from "@civiclens/shared";
 import { authConfig, authHandler, member, admin } from "./auth.js";
@@ -220,13 +221,15 @@ app.post("/api/analyses", async (c) => {
   return c.json({
     analysis,
     model,
-    receipt: signReceipt(
-      u.id,
-      analyzedHash(image, description),
-      analysis,
-      model,
-      inputMaxEdge,
-    ),
+    receipt: isPublishableAnalysis(analysis)
+      ? signReceipt(
+          u.id,
+          analyzedHash(image, description),
+          analysis,
+          model,
+          inputMaxEdge,
+        )
+      : "",
   });
 });
 app.post("/api/related-reports", async (c) => {
@@ -291,6 +294,11 @@ async function publish(c: any, target?: string) {
         u.id,
         analyzedHash(image, input.analyzedDescription),
       );
+      if (!isPublishableAnalysis(analysis))
+        throw new HttpError(
+          422,
+          "Insufficient evidence. Select a clearer or more relevant photo and run AI review again.",
+        );
       if (target) {
         const existing =
           await tx`SELECT id FROM issues WHERE id=${target} AND visibility='public' FOR UPDATE`;

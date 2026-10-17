@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
+import sharp from "sharp";
 import { config } from "./config.js";
 const base = "http://localhost:3000",
   origin = "http://localhost:5173";
@@ -75,9 +76,38 @@ const reporter = await login("reporter@civiclens.test");
 console.log("PASS real email-link authentication");
 const image = process.env.TEST_IMAGE;
 assert.ok(image, "Set TEST_IMAGE to a non-sensitive JPEG fixture.");
+const blank = await sharp({
+  create: { width: 40, height: 40, channels: 3, background: "white" },
+})
+  .jpeg()
+  .toBuffer();
+const insufficientForm = new FormData();
+insufficientForm.set(
+  "image",
+  new File([blank], "blank.jpg", { type: "image/jpeg" }),
+);
+insufficientForm.set(
+  "description",
+  "A resident claims a pothole. Assess only the visible image.",
+);
+insufficientForm.set("imageApproved", "true");
+const insufficientResponse = await reporter.call("/api/analyses", {
+  method: "POST",
+  body: insufficientForm,
+});
+assert.equal(
+  insufficientResponse.status,
+  200,
+  await insufficientResponse.clone().text(),
+);
+const insufficientResult = (await insufficientResponse.json()) as any;
+assert.equal(insufficientResult.analysis.evidenceStatus, "insufficient");
+assert.equal(insufficientResult.analysis.category, null);
+assert.equal(insufficientResult.receipt, "");
+console.log("PASS blank image has no category or publication receipt");
 const bytes = await readFile(image);
 const description =
-  "A resident reports damaged road surface. Describe only visible evidence and state uncertainty.";
+  "Disposable test using a reference photo. This is not a current local incident. Describe only visible road damage and state uncertainty.";
 const form = new FormData();
 form.set("image", new File([bytes], "approved.jpg", { type: "image/jpeg" }));
 form.set("description", description);
@@ -88,6 +118,11 @@ const review = await reporter.call("/api/analyses", {
 });
 assert.equal(review.status, 200, await review.clone().text());
 const result = (await review.json()) as any;
+assert.equal(
+  result.analysis.evidenceStatus,
+  "sufficient",
+  "Select a relevant reference photo for the publication smoke test.",
+);
 assert.ok(result.receipt);
 const reviewedModel = JSON.parse(
   Buffer.from(result.receipt.split(".")[0], "base64url").toString(),

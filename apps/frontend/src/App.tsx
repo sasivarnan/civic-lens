@@ -44,6 +44,7 @@ import {
   today,
   categories,
   categoryLabels,
+  isPublishableAnalysis,
   type Issue,
   type Analysis,
   type ReportInput,
@@ -615,8 +616,11 @@ function Editor() {
         receipt: r.receipt,
         analyzedDescription: description,
         reviewedDescription: description,
-        category: r.analysis.category,
+        category: r.analysis.category ?? now.category,
       })
+      setRelated([])
+      setSearched(false)
+      setTarget(issueId)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -624,6 +628,7 @@ function Editor() {
     }
   }
   async function search() {
+    if (!isPublishableAnalysis(s.analysis)) return
     setBusy("Finding related reports")
     setError("")
     const latitude = s.latitude,
@@ -658,7 +663,7 @@ function Editor() {
     }
   }
   async function publish() {
-    if (!s.approved) return
+    if (!s.approved || !isPublishableAnalysis(s.analysis)) return
     setBusy("Publishing evidence")
     setError("")
     const input: ReportInput = {
@@ -908,130 +913,145 @@ function Editor() {
             <Card>
               <CardContent className="space-y-4 pt-6">
                 <h2>
-                  <span className="number-circle">4</span>Review and publish
+                  <span className="number-circle">4</span>Review evidence
                 </h2>
                 <Findings analysis={s.analysis} />
-                <Label>
-                  Reviewed category
-                  <select
-                    value={s.category}
-                    onChange={(e) =>
-                      changed({
-                        category: e.target.value as EditorState["category"],
-                      })
-                    }
-                  >
-                    {categories.map((c) => (
-                      <option key={c} value={c}>
-                        {categoryLabels[c]}
-                      </option>
-                    ))}
-                  </select>
-                </Label>
-                <Label>
-                  Reviewed public description
-                  <Textarea
-                    rows={4}
-                    value={s.reviewedDescription}
-                    maxLength={3000}
-                    onChange={(e) => {
-                      changed({ reviewedDescription: e.target.value })
-                      setRelated([])
-                      setSearched(false)
-                    }}
-                  />
-                </Label>
-                {!issueId && (
+                {isPublishableAnalysis(s.analysis) ? (
                   <>
-                    <Button
-                      variant="outline"
-                      disabled={
-                        !!busy ||
-                        !s.locationConfirmed ||
-                        s.reviewedDescription.length < 10
-                      }
-                      onClick={() => void search()}
-                    >
-                      Find possibly related reports
-                    </Button>
-                    {searched && !related.length && (
-                      <p className="text-sm">
-                        No indexed related reports were found nearby. This does
-                        not prove there is no existing issue.
-                      </p>
-                    )}
-                    {related.map((i) => (
-                      <label className="related-option" key={i.id}>
-                        <input
-                          type="radio"
-                          name="target"
-                          checked={target === i.id}
-                          onChange={() => {
-                            setTarget(i.id)
-                            changed({})
-                          }}
-                        />
-                        <span>
-                          {i.title}
-                          <small>
-                            {i.observationDate} · {statusLabel(i.status)} ·{" "}
-                            {i.latitude.toFixed(4)}, {i.longitude.toFixed(4)}
-                          </small>
-                        </span>
-                        <Link
-                          to="/issues/$issueId"
-                          params={{ issueId: i.id }}
-                          target="_blank"
-                        >
-                          View
-                        </Link>
-                      </label>
-                    ))}
-                    <label className="check">
-                      <input
-                        type="radio"
-                        name="target"
-                        checked={!target}
-                        onChange={() => {
-                          setTarget(undefined)
-                          changed({})
+                    <Label>
+                      Reviewed category
+                      <select
+                        value={s.category}
+                        onChange={(e) =>
+                          changed({
+                            category: e.target.value as EditorState["category"],
+                          })
+                        }
+                      >
+                        {categories.map((c) => (
+                          <option key={c} value={c}>
+                            {categoryLabels[c]}
+                          </option>
+                        ))}
+                      </select>
+                    </Label>
+                    <Label>
+                      Reviewed public description
+                      <Textarea
+                        rows={4}
+                        value={s.reviewedDescription}
+                        maxLength={3000}
+                        onChange={(e) => {
+                          changed({ reviewedDescription: e.target.value })
+                          setRelated([])
+                          setSearched(false)
                         }}
                       />
-                      Publish a separate issue
+                    </Label>
+                    {!issueId && (
+                      <>
+                        <Button
+                          variant="outline"
+                          disabled={
+                            !!busy ||
+                            !s.locationConfirmed ||
+                            s.reviewedDescription.length < 10
+                          }
+                          onClick={() => void search()}
+                        >
+                          Find possibly related reports
+                        </Button>
+                        {searched && !related.length && (
+                          <p className="text-sm">
+                            No indexed related reports were found nearby. This
+                            does not prove there is no existing issue.
+                          </p>
+                        )}
+                        {related.map((i) => (
+                          <label className="related-option" key={i.id}>
+                            <input
+                              type="radio"
+                              name="target"
+                              checked={target === i.id}
+                              onChange={() => {
+                                setTarget(i.id)
+                                changed({})
+                              }}
+                            />
+                            <span>
+                              {i.title}
+                              <small>
+                                {i.observationDate} · {statusLabel(i.status)} ·{" "}
+                                {i.latitude.toFixed(4)},{" "}
+                                {i.longitude.toFixed(4)}
+                              </small>
+                            </span>
+                            <Link
+                              to="/issues/$issueId"
+                              params={{ issueId: i.id }}
+                              target="_blank"
+                            >
+                              View
+                            </Link>
+                          </label>
+                        ))}
+                        <label className="check">
+                          <input
+                            type="radio"
+                            name="target"
+                            checked={!target}
+                            onChange={() => {
+                              setTarget(undefined)
+                              changed({})
+                            }}
+                          />
+                          Publish a separate issue
+                        </label>
+                      </>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Check the approved photo, public point, title,
+                      description, category, date, and AI findings above.
+                      Similarity does not establish that reports describe the
+                      same issue.
+                    </p>
+                    <label className="check">
+                      <input
+                        type="checkbox"
+                        checked={s.finalApproved}
+                        onChange={(e) =>
+                          patch({ finalApproved: e.target.checked })
+                        }
+                      />
+                      I approve this content for public sharing.
                     </label>
+                    <Button
+                      disabled={
+                        !!busy ||
+                        !s.finalApproved ||
+                        !s.locationConfirmed ||
+                        !s.imageApproved ||
+                        s.title.trim().length < 5 ||
+                        s.reviewedDescription.trim().length < 10
+                      }
+                      onClick={() => void publish()}
+                    >
+                      {busy === "Publishing evidence" ? (
+                        <LoaderCircle className="animate-spin" />
+                      ) : (
+                        <ArrowUpRight />
+                      )}
+                      {target ? "Publish later evidence" : "Publish issue"}
+                    </Button>
                   </>
+                ) : (
+                  <p className="notice">
+                    Select a clearer or more relevant photo in step 1. Review
+                    privacy, confirm the location, and run AI review again.
+                    Publication is blocked for this image. Gemma can make
+                    mistakes.
+                  </p>
                 )}
-                <p className="text-sm text-muted-foreground">
-                  Check the approved photo, public point, title, description,
-                  category, date, and AI findings above. Similarity does not
-                  establish that reports describe the same issue.
-                </p>
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={s.finalApproved}
-                    onChange={(e) => patch({ finalApproved: e.target.checked })}
-                  />
-                  I approve this content for public sharing.
-                </label>
-                <Button
-                  disabled={
-                    !!busy ||
-                    !s.finalApproved ||
-                    !s.locationConfirmed ||
-                    !s.imageApproved ||
-                    s.title.trim().length < 5 ||
-                    s.reviewedDescription.trim().length < 10
-                  }
-                  onClick={() => void publish()}
-                >
-                  {busy === "Publishing evidence" ? (
-                    <LoaderCircle className="animate-spin" />
-                  ) : (
-                    <ArrowUpRight />
-                  )}
-                  {target ? "Publish later evidence" : "Publish issue"}
-                </Button>
               </CardContent>
             </Card>
           )}

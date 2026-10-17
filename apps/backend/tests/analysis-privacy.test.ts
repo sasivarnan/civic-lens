@@ -24,6 +24,7 @@ it("strips source metadata before an approved request reaches the AI provider", 
         JSON.stringify({
           message: {
             content: JSON.stringify({
+              evidenceStatus: "sufficient",
               category: "accessibility",
               observations: [],
               claims: [],

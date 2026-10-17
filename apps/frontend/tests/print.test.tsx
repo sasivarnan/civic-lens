@@ -28,6 +28,7 @@ it("loads all public history before print and includes evidence, location, AI, a
     supportCount: 2,
     confirmationCount: 1,
     analysis: {
+      evidenceStatus: "sufficient",
       category: "accessibility",
       observations: ["Image 1: test pixels."],
       claims: [],

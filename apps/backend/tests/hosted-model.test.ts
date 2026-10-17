@@ -14,6 +14,7 @@ vi.mock("../src/config.js", async (original) => {
 });
 import { analyze } from "../src/models.js";
 const analysis = {
+  evidenceStatus: "sufficient",
   category: "accessibility",
   observations: ["Image 1 contains a synthetic rectangle."],
   claims: ["A resident reports a damaged ramp."],
