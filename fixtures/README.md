@@ -15,4 +15,4 @@ Run the full local API check with the app and services running:
 TEST_IMAGE="$PWD/fixtures/road-damage.jpg" pnpm --filter @civiclens/backend test:smoke
 ```
 
-The check uses real model services. It can fail when those services are unavailable. It hides its test report after all checks pass. If a later check fails after publication, use the local Admin account to hide the report.
+The check uses real model services. Hosted reviews wait at least 65 seconds before each request. Run one check process at a time. Browser reviews also use the project allowance. It can fail when those services are unavailable. It hides its test report after all checks pass. If a later check fails after publication, use the local Admin account to hide the report.

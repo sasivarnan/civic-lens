@@ -86,7 +86,6 @@ it.each([
         { status: 402 },
       ),
   ],
-  ["rate limit", () => new Response("Rate limited", { status: 429 })],
   ["invalid JSON", () => output("Incomplete response {")],
   [
     "invalid schema",
@@ -146,5 +145,28 @@ it.each([400, 401, 403])("does not retry HTTP %s", async (status) => {
   await expect(
     analyze(await image(), "Synthetic resident statement."),
   ).rejects.toMatchObject({ status: 503 });
+  expect(fetch).toHaveBeenCalledOnce();
+});
+
+it("returns a distinct service-limit error without retrying or exposing quota details", async () => {
+  const fetch = vi.fn(
+    async () =>
+      new Response(
+        JSON.stringify({
+          error: {
+            status: "RESOURCE_EXHAUSTED",
+            message: "Private project quota details",
+          },
+        }),
+        { status: 429 },
+      ),
+  );
+  vi.stubGlobal("fetch", fetch);
+  await expect(
+    analyze(await image(), "Synthetic resident statement."),
+  ).rejects.toMatchObject({
+    status: 429,
+    message: "The AI service limit was reached. Please try later.",
+  });
   expect(fetch).toHaveBeenCalledOnce();
 });

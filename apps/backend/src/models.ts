@@ -16,11 +16,13 @@ async function external<T>(
     return await Effect.runPromise(
       Effect.tryPromise({
         try: () => task(AbortSignal.timeout(60_000)),
-        catch: () =>
-          new HttpError(
-            503,
-            "The AI service is unavailable. Your form is still on this device.",
-          ),
+        catch: (error) =>
+          error instanceof HttpError
+            ? error
+            : new HttpError(
+                503,
+                "The AI service is unavailable. Your form is still on this device.",
+              ),
       }),
     );
   } finally {
@@ -84,6 +86,11 @@ export async function analyze(
       }
       if (!r.ok) {
         console.warn("Hosted Gemma request failed: HTTP", r.status);
+        if (r.status === 429)
+          throw new HttpError(
+            429,
+            "The AI service limit was reached. Please try later.",
+          );
         throw new Error("AI request failed");
       }
       const data = (await r.json()) as any;

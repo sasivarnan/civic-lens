@@ -378,6 +378,16 @@ On 17 October, improve the existing product and test the local demo. Do not add 
 
 All 52 automated tests, type checks, lint, unused-code checks, and the production build passed. One full API run passed after the prompt and retry changes. A later repeat failed during blank-image review. Direct checks also found HTTP 500 errors with the alternate hosted model. Keep `gemma-4-26b-a4b-it` as the selected model; the alternate model has not earned a change. Passing checks do not establish sustained provider reliability. A service failure must leave the form available and prevent publication.
 
+### Free-tier test procedure
+
+The user reports that the current Gemma key uses a different Google account from the account open in AI Studio. The visible quota page therefore cannot establish the current key's limits. No account access, key change, or billing change is required for local product checks.
+
+Run one live test process at a time. For hosted Gemma, the full API test waits at least 65 seconds before each review, including the first. `TEST_AI_GAP_MS` can increase this interval up to 15 minutes. This is a test delay, not proof that requests meet the project's minute, token, or daily quotas. Browser requests share the allowance and are not paced by this runner. The adapter can still retry one selected server error within its 60-second time limit.
+
+Hosted HTTP 429 now returns a separate service-limit message and is not retried. HTTP 500 remains a server-error result. Keep those causes separate. The normal automated tests use mocked provider responses and do not use Google quota.
+
+The spaced full API test passed on 17 October with hosted Gemma, local EmbeddingGemma, real sign-in, PostgreSQL, and private S3. Both blank-image rejection and road-photo publication passed. The runner hid its test issue after verification. This single successful run does not prove that earlier HTTP 500 errors were caused by rate limits. Keep the spaced procedure for future live checks.
+
 ## Open decisions and release checks
 
 Hosted validation on 17 October 2026: the first API key listed `gemma-4-26b-a4b-it` and `gemma-4-31b-it`, but generation returned HTTP 402 with a depleted-prepayment message. The user replaced the key. The new key passed three synthetic image checks through the production adapter: a rectangle with unsupported incident claims, a blank image, and text with misleading instructions. These calls completed in approximately 5-10 seconds and returned valid schema output. They stated that incident evidence was missing; the misleading text did not establish a repair. These are limited sanity checks, not a real-photo quality benchmark.

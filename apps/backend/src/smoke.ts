@@ -1,9 +1,26 @@
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
+import { setTimeout as delay } from "node:timers/promises";
 import sharp from "sharp";
 import { config } from "./config.js";
 const base = "http://localhost:3000",
   origin = "http://localhost:5173";
+const hostedGapMs = Number(process.env.TEST_AI_GAP_MS ?? 65_000);
+assert.ok(
+  Number.isSafeInteger(hostedGapMs) &&
+    hostedGapMs >= 65_000 &&
+    hostedGapMs <= 900_000,
+  "TEST_AI_GAP_MS must be between 65000 and 900000 milliseconds.",
+);
+async function reviewEvidence(client: Client, body: FormData) {
+  if (config.MODEL_PROVIDER === "gemini") {
+    console.log(
+      `Waiting ${hostedGapMs / 1000}s before hosted review; no parallel live checks.`,
+    );
+    await delay(hostedGapMs);
+  }
+  return client.call("/api/analyses", { method: "POST", body });
+}
 class Client {
   cookies = new Map<string, string>();
   async call(path: string, init: RequestInit = {}) {
@@ -91,10 +108,7 @@ insufficientForm.set(
   "A resident claims a pothole. Assess only the visible image.",
 );
 insufficientForm.set("imageApproved", "true");
-const insufficientResponse = await reporter.call("/api/analyses", {
-  method: "POST",
-  body: insufficientForm,
-});
+const insufficientResponse = await reviewEvidence(reporter, insufficientForm);
 assert.equal(
   insufficientResponse.status,
   200,
@@ -112,10 +126,7 @@ const form = new FormData();
 form.set("image", new File([bytes], "approved.jpg", { type: "image/jpeg" }));
 form.set("description", description);
 form.set("imageApproved", "true");
-const review = await reporter.call("/api/analyses", {
-  method: "POST",
-  body: form,
-});
+const review = await reviewEvidence(reporter, form);
 assert.equal(review.status, 200, await review.clone().text());
 const result = (await review.json()) as any;
 assert.equal(
