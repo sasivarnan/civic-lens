@@ -5,12 +5,12 @@ import sharp from "sharp";
 import { config } from "./config.js";
 const base = "http://localhost:3000",
   origin = "http://localhost:5173";
-const hostedGapMs = Number(process.env.TEST_AI_GAP_MS ?? 65_000);
+const hostedGapMs = Number(process.env.TEST_AI_GAP_MS ?? 5_000);
 assert.ok(
   Number.isSafeInteger(hostedGapMs) &&
-    hostedGapMs >= 65_000 &&
+    hostedGapMs >= 5_000 &&
     hostedGapMs <= 900_000,
-  "TEST_AI_GAP_MS must be between 65000 and 900000 milliseconds.",
+  "TEST_AI_GAP_MS must be between 5000 and 900000 milliseconds.",
 );
 async function reviewEvidence(client: Client, body: FormData) {
   if (config.MODEL_PROVIDER === "gemini") {

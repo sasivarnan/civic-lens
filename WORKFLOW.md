@@ -380,13 +380,22 @@ All 52 automated tests, type checks, lint, unused-code checks, and the productio
 
 ### Free-tier test procedure
 
-The user reports that the current Gemma key uses a different Google account from the account open in AI Studio. The visible quota page therefore cannot establish the current key's limits. No account access, key change, or billing change is required for local product checks.
+The current key belongs to another Google account. The user confirmed its Free tier and supplied these AI Studio values on 17 October 2026. These are a user-supplied snapshot; limits can change.
 
-Run one live test process at a time. For hosted Gemma, the full API test waits at least 65 seconds before each review, including the first. `TEST_AI_GAP_MS` can increase this interval up to 15 minutes. This is a test delay, not proof that requests meet the project's minute, token, or daily quotas. Browser requests share the allowance and are not paced by this runner. The adapter can still retry one selected server error within its 60-second time limit.
+| Model       | Peak RPM / limit | Peak input TPM / limit | Peak RPD / limit |
+| ----------- | ---------------- | ---------------------- | ---------------- |
+| Gemma 4 26B | 4 / 30           | 2,200 / 16,000         | 38 / 14,400      |
+| Gemma 4 31B | 2 / 30           | 934 / 16,000           | 4 / 14,400       |
+
+The supplied figures show no quota breach. They do not establish the cause of earlier HTTP 500 errors. No account access, key change, or billing upgrade is required for these checks.
+
+Run one live test process at a time. For hosted Gemma, the full API test waits at least five seconds before each review, including the first. `TEST_AI_GAP_MS` can increase this interval up to 15 minutes. This is a test delay, not proof that requests meet the project's minute, token, or daily quotas. Browser requests share the allowance and are not paced by this runner. The adapter can still retry one selected server error within its 60-second time limit.
 
 Hosted HTTP 429 now returns a separate service-limit message and is not retried. HTTP 500 remains a server-error result. Keep those causes separate. The normal automated tests use mocked provider responses and do not use Google quota.
 
-The spaced full API test passed on 17 October with hosted Gemma, local EmbeddingGemma, real sign-in, PostgreSQL, and private S3. Both blank-image rejection and road-photo publication passed. The runner hid its test issue after verification. This single successful run does not prove that earlier HTTP 500 errors were caused by rate limits. Keep the spaced procedure for future live checks.
+The initial spaced full API test, with a 65-second pause, passed on 17 October with hosted Gemma, local EmbeddingGemma, real sign-in, PostgreSQL, and private S3. Both blank-image rejection and road-photo publication passed. The runner hid its test issue after verification. This single successful run does not prove that earlier HTTP 500 errors were caused by rate limits. Keep the spaced procedure for future live checks.
+
+After the user supplied the model limits, the full API test passed again with a five-second pause before each hosted review. It covered both evidence outcomes, publication, repeated submissions, images, later evidence, related reports, community actions, and moderation. The test issue was hidden afterwards. Type checks passed. Keep requests sequential; this result does not establish sustained availability.
 
 ## Open decisions and release checks
 
