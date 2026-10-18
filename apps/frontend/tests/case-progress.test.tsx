@@ -124,7 +124,7 @@ it("permits a direct resolution action but blocks it without later evidence", as
   submit()
   expect(await screen.findByRole("alert")).toHaveProperty(
     "textContent",
-    expect.stringContaining("later photo evidence")
+    expect.stringContaining("later photo")
   )
   expect(fetch).not.toHaveBeenCalled()
 })
@@ -163,4 +163,63 @@ it("keeps entered text when the server rejects an update", async () => {
     (screen.getByLabelText("Update note") as HTMLTextAreaElement).value
   ).toBe("Demo update for review.")
   expect(refresh).not.toHaveBeenCalled()
+})
+
+it("keeps an in-progress note update at its current stage without requiring a photo", async () => {
+  const fetch = vi.fn<
+    (url: unknown, options: RequestInit) => Promise<Response>
+  >(async () => new Response(JSON.stringify({ ok: true })))
+  vi.stubGlobal("fetch", fetch)
+  await open({
+    ...assigned,
+    caseProgress: { ...assigned.caseProgress!, stage: "in_progress" },
+  })
+  expect(screen.queryByLabelText("Later photo evidence")).toBeNull()
+  fireEvent.change(screen.getByLabelText("Update note"), {
+    target: { value: "Demo team reports a further work update." },
+  })
+  submit()
+  await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+  expect(JSON.parse(fetch.mock.calls[0][1].body as string).stage).toBe(
+    "in_progress"
+  )
+})
+it("offers upload and can load and select evidence from earlier history", async () => {
+  const photo = {
+    id: "8f102b20-6654-4b79-9de6-dc407f302009",
+    assetId: "asset-1",
+    kind: "evidence",
+    observationDate: "2026-10-18",
+    createdAt: "2026-10-18T06:00:00Z",
+    description: "Demo repair photo.",
+  }
+  const fetch = vi
+    .fn<(url: unknown, options?: RequestInit) => Promise<Response>>()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ history: [photo], nextHistoryCursor: null })
+      )
+    )
+    .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true })))
+  vi.stubGlobal("fetch", fetch)
+  await open({
+    ...assigned,
+    nextHistoryCursor: "2026-10-18T06:00:00Z",
+  } as Issue)
+  fireEvent.click(screen.getByRole("button", { name: "Report resolution" }))
+  expect(screen.getByText("Upload evidence")).toBeTruthy()
+  fireEvent.click(screen.getByRole("button", { name: "Load earlier evidence" }))
+  await screen.findByRole("option", { name: /Demo repair photo/ })
+  fireEvent.change(screen.getByLabelText("Later photo evidence"), {
+    target: { value: photo.id },
+  })
+  fireEvent.change(screen.getByLabelText("Update note"), {
+    target: { value: "Demo repair evidence selected for review." },
+  })
+  submit()
+  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+  expect(JSON.parse(fetch.mock.calls[1][1]!.body as string)).toMatchObject({
+    stage: "resolution_reported",
+    evidenceId: photo.id,
+  })
 })

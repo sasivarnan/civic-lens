@@ -513,3 +513,9 @@ Validation: all 43 frontend tests, lint, type checks, frontend build, and unused
 The Vite dev server listens on local network interfaces. Open the computer IP address on port 5173 from a device on the same network. API requests use the Vite proxy. Keep APP_ORIGIN at the localhost URL when sign-in emails must open on this computer. Set DEV_EXTRA_ORIGIN to the local network URL to accept phone requests. The extra origin is accepted only in development; production accepts APP_ORIGIN only. Restart the dev servers after an origin change.
 
 Plain HTTP network addresses do not provide phone GPS access. Use the map pin or coordinate fields. The browser uses getRandomValues to create UUIDs when randomUUID is unavailable on HTTP. Photo privacy approval remains required.
+
+## Case evidence selection: corrected on 18 October
+
+Opening an In progress case keeps that stage selected. A note update must not select Resolution reported automatically. Resolution and reopening still require a selected public later photo. The dialog has an Upload evidence link to the existing privacy and evidence review flow. Publish the photo, return to Manage case, and select it. A public source URL is optional and cannot replace later photo evidence. Load earlier evidence from the dialog if the photo is outside the first history page.
+
+Validation: all 47 frontend tests and 59 backend tests passed. Lint, backend type checks, frontend build, and unused-code checks passed. Tests cover progress notes without photos, missing resolution evidence, and selection from earlier history. Browser checks confirmed the upload link and photo review page. No case data changed during the browser check.

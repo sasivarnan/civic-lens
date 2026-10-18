@@ -15,13 +15,15 @@ import { Label } from "./ui/label"
 import { Textarea } from "./ui/textarea"
 import { Card, CardContent } from "./ui/card"
 
+type CaseIssue = Issue & { nextHistoryCursor?: string | null }
+
 export function CaseProgress({
   issue,
   canManage,
   ownerName,
   onUpdated,
 }: {
-  issue: Issue
+  issue: CaseIssue
   canManage: boolean
   ownerName: string
   onUpdated: () => Promise<void>
@@ -165,7 +167,7 @@ function CaseProgressEditor({
   ownerName,
   onUpdated,
 }: {
-  issue: Issue
+  issue: CaseIssue
   ownerName: string
   onUpdated: () => Promise<void>
 }) {
@@ -176,9 +178,7 @@ function CaseProgressEditor({
       ? "assigned"
       : previous === "assigned"
         ? "in_progress"
-        : previous === "in_progress"
-          ? "resolution_reported"
-          : previous
+        : previous
   )
   const [authority, setAuthority] = useState(progress?.authority ?? "")
   const [owner, setOwner] = useState(progress?.owner ?? ownerName)
@@ -189,12 +189,48 @@ function CaseProgressEditor({
   const [note, setNote] = useState("")
   const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
-  const evidence =
-    issue.history?.filter((item) => item.kind === "evidence" && item.assetId) ??
-    []
+  const [earlierEvidence, setEarlierEvidence] = useState<
+    NonNullable<Issue["history"]>
+  >([])
+  const [historyCursor, setHistoryCursor] = useState(issue.nextHistoryCursor)
+  const [loadingEvidence, setLoadingEvidence] = useState(false)
+  const evidence = [...(issue.history ?? []), ...earlierEvidence].filter(
+    (item, index, items) =>
+      item.kind === "evidence" &&
+      item.assetId &&
+      items.findIndex((other) => other.id === item.id) === index
+  )
+  async function loadEarlierEvidence() {
+    if (!historyCursor || loadingEvidence) return
+    setLoadingEvidence(true)
+    setError("")
+    try {
+      const page = await api<CaseIssue>(
+        "/issues/" +
+          issue.id +
+          "?historyCursor=" +
+          encodeURIComponent(historyCursor)
+      )
+      setEarlierEvidence((old) => [...old, ...(page.history ?? [])])
+      setHistoryCursor(page.nextHistoryCursor)
+    } catch (error) {
+      setError((error as Error).message)
+    } finally {
+      setLoadingEvidence(false)
+    }
+  }
   async function save(e: React.FormEvent) {
     e.preventDefault()
     setError("")
+    if (
+      (stage === "resolution_reported" || stage === "reopened") &&
+      !evidenceId
+    ) {
+      setError(
+        "Select a later photo below, or use Upload evidence first. A public source URL is optional."
+      )
+      return
+    }
     const input = caseProgressSchema.safeParse({
       stage,
       authority,
@@ -302,6 +338,7 @@ function CaseProgressEditor({
               Later photo evidence
               <select
                 className="privacy-effect"
+                required
                 value={evidenceId}
                 onChange={(e) => setEvidenceId(e.target.value)}
               >
@@ -313,12 +350,31 @@ function CaseProgressEditor({
                 ))}
               </select>
             </Label>
+            <Link
+              className="text-link"
+              to="/issues/$issueId/evidence/new"
+              params={{ issueId: issue.id }}
+            >
+              Upload evidence
+            </Link>
             {!evidence.length && (
               <p className="text-xs">
-                Add later photo evidence before resolution or reopening. Close
-                this dialog and select Add repair or follow-up evidence. Load
-                earlier history if needed.
+                Upload and publish a later photo, then return here to select it.
+                The original report photo and a source URL cannot replace later
+                evidence.
               </p>
+            )}
+            {historyCursor && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loadingEvidence}
+                onClick={() => void loadEarlierEvidence()}
+              >
+                {loadingEvidence
+                  ? "Loading evidence…"
+                  : "Load earlier evidence"}
+              </Button>
             )}
           </div>
         )}
