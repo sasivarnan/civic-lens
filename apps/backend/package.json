@@ -10,7 +10,8 @@
     "test": "vitest run",
     "db:migrate": "tsx --env-file-if-exists=../../.env src/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=../../.env src/seed.ts",
-    "test:smoke": "tsx --env-file-if-exists=../../.env src/smoke.ts"
+    "test:smoke": "tsx --env-file-if-exists=../../.env src/smoke.ts",
+    "test:cases": "tsx --env-file-if-exists=../../.env src/case-smoke.ts"
   },
   "dependencies": {
     "@auth/core": "latest",

@@ -14,6 +14,7 @@ import {
   type Issue,
 } from "@civiclens/shared";
 import { authConfig, authHandler, member, admin } from "./auth.js";
+import { updateCase } from "./case-progress.js";
 import { createDemoMember } from "./demo.js";
 import { sql } from "./db.js";
 import { config, maxImageBytes } from "./config.js";
@@ -43,6 +44,8 @@ function publicIssue(r: any): Issue {
     description: r.description,
     category: r.category,
     status: r.status,
+    caseProgress: r.case_progress ?? null,
+    caseRevision: r.case_revision ?? 0,
     latitude: r.latitude,
     longitude: r.longitude,
     observationDate: day(r.observation_date),
@@ -415,6 +418,7 @@ app.post("/api/issues/:id/flags", async (c) => {
   await sql`INSERT INTO flags(id,issue_id,evidence_id,author_id,reason) VALUES(${randomUUID()},${id},${input.evidenceId ?? null},${u.id},${input.reason})`;
   return c.json({ ok: true }, 201);
 });
+app.patch("/api/issues/:id/progress", updateCase);
 app.get("/api/moderation/flags", async (c) => {
   await admin(c);
   const flags =
@@ -439,9 +443,11 @@ app.patch("/api/moderation/content/:type/:id", async (c) => {
   await sql.begin(async (tx) => {
     const [item] =
       type === "issue"
-        ? await tx`SELECT id FROM issues WHERE id=${id} FOR UPDATE`
+        ? await tx`SELECT id,case_progress FROM issues WHERE id=${id} FOR UPDATE`
         : await tx`SELECT issue_id id FROM evidence WHERE id=${id} FOR UPDATE`;
     if (!item) throw new HttpError(404, "Content not found.");
+    if (input.status && item.case_progress)
+      throw new HttpError(409, "Use the case progress control for this issue status.");
     if (input.status && input.status !== "reported") {
       if (!input.evidenceId)
         throw new HttpError(
