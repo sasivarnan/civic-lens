@@ -80,7 +80,7 @@ async function openEditor() {
   await screen.findByRole("heading", { name: "Report an issue", exact: true })
 }
 async function choose(file: File) {
-  fireEvent.change(screen.getByLabelText("Select a still photo"), {
+  fireEvent.change(screen.getByLabelText("Choose photo"), {
     target: { files: [file] },
   })
 }
@@ -389,7 +389,7 @@ it("keeps phone camera capture separate from gallery selection", async () => {
   expect(
     screen.getByLabelText("Take photo on phone").getAttribute("capture")
   ).toBe("environment")
-  expect(
-    screen.getByLabelText("Select a still photo").hasAttribute("capture")
-  ).toBe(false)
+  expect(screen.getByLabelText("Choose photo").hasAttribute("capture")).toBe(
+    false
+  )
 })

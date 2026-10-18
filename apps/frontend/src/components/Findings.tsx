@@ -21,20 +21,18 @@ export function Findings({ analysis }: { analysis: Analysis }) {
           ["Conflicts", analysis.conflicts],
           ["Unknowns", analysis.unknowns],
         ] as const
-      ).map(([title, items]) => (
-        <section key={title}>
-          <h3>{title}</h3>
-          {items.length ? (
+      )
+        .filter(([, items]) => items.length > 0)
+        .map(([title, items]) => (
+          <section key={title}>
+            <h3>{title}</h3>
             <ul>
               {items.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
             </ul>
-          ) : (
-            <p className="text-muted-foreground">None listed by the model.</p>
-          )}
-        </section>
-      ))}
+          </section>
+        ))}
       <section>
         <h3>Useful additional evidence</h3>
         <p>{analysis.nextEvidence}</p>

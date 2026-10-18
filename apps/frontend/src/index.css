@@ -129,6 +129,7 @@
   }
 }
 html {
+  font-size: 120%;
   scroll-behavior: smooth;
 }
 body {
@@ -174,7 +175,7 @@ h2 {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 650;
   letter-spacing: -1px;
 }
@@ -189,7 +190,7 @@ h2 {
   justify-content: center;
 }
 .brand-city {
-  font-size: 9px;
+  font-size: 0.5625rem;
   letter-spacing: 1.6px;
   font-weight: 500;
   color: var(--muted-foreground);
@@ -201,7 +202,7 @@ nav {
   display: flex;
   gap: 25px;
   align-items: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 nav a.active {
   font-weight: 650;
@@ -221,7 +222,7 @@ nav a.active {
   padding: 28px 5vw;
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted-foreground);
 }
 .hero {
@@ -240,7 +241,7 @@ nav a.active {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 0.625rem;
   letter-spacing: 1.3px;
   font-weight: 600;
   text-transform: uppercase;
@@ -254,7 +255,7 @@ nav a.active {
   display: inline-block;
 }
 .hero h1 {
-  font-size: clamp(38px, 4.5vw, 65px);
+  font-size: clamp(2.375rem, 5.4vw, 4.0625rem);
   line-height: 1.06;
   margin: 24px 0;
   letter-spacing: -3px;
@@ -264,7 +265,7 @@ nav a.active {
 }
 .hero-copy > p:not(.eyebrow) {
   color: #707572;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.8;
 }
 .hero-actions {
@@ -281,28 +282,16 @@ nav a.active {
   background: #1c2922;
   color: white;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .text-link {
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  font-size: 12px;
+  font-size: 0.75rem;
   text-decoration: underline;
   background: none;
   border: 0;
-}
-.hero-notes {
-  display: flex;
-  gap: 22px;
-  margin-top: 35px;
-  font-size: 10px;
-  color: #757a76;
-}
-.hero-notes span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 .hero-visual {
   height: 330px;
@@ -402,18 +391,10 @@ nav a.active {
   background: #fffffff0;
   border: 1px solid #e7e7de;
   border-radius: 10px;
-  font-size: 10px;
+  font-size: 0.625rem;
   display: flex;
   gap: 8px;
   align-items: center;
-}
-.visual-label {
-  position: absolute;
-  top: 17px;
-  left: 18px;
-  font-size: 8px;
-  color: #75806f;
-  letter-spacing: 1.6px;
 }
 .section {
   padding: 42px 5vw;
@@ -427,7 +408,7 @@ nav a.active {
 }
 .section-title h1,
 .section-title h2 {
-  font-size: 27px;
+  font-size: 1.6875rem;
   margin-top: 7px;
 }
 .view-switch {
@@ -438,7 +419,7 @@ nav a.active {
 }
 .view-switch button {
   padding: 7px 16px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   border-radius: 7px;
 }
 .view-switch button[aria-pressed="true"] {
@@ -459,17 +440,12 @@ nav a.active {
   gap: 7px;
   padding: 9px 13px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .filter-row button.selected {
   background: #202c24;
   color: #fff;
   border-color: #202c24;
-}
-.filter-note {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--muted-foreground);
 }
 .issue-grid {
   display: grid;
@@ -511,7 +487,7 @@ nav a.active {
   background: linear-gradient(135deg, #e9eee5, #f5f3ec);
 }
 .image-placeholder span {
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .image-badge {
   position: absolute;
@@ -523,7 +499,7 @@ nav a.active {
   padding: 19px;
 }
 .issue-card h3 {
-  font-size: 16px;
+  font-size: 1rem;
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -535,7 +511,7 @@ nav a.active {
   border-top: 1px solid var(--border);
   padding-top: 13px;
   margin-top: 18px;
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: var(--muted-foreground);
   gap: 8px;
 }
@@ -557,16 +533,16 @@ nav a.active {
   color: #6a7469;
 }
 .empty-state h3 {
-  font-size: 18px;
+  font-size: 1.125rem;
   color: #28372e;
 }
 .empty-state p {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .empty-state a {
   display: flex;
   gap: 7px;
-  font-size: 12px;
+  font-size: 0.75rem;
   align-items: center;
 }
 .how-section {
@@ -583,16 +559,16 @@ nav a.active {
   margin-top: 24px;
 }
 .step-number {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: #85907e;
   letter-spacing: 1px;
 }
 .how-grid h3 {
   margin: 10px 0;
-  font-size: 16px;
+  font-size: 1rem;
 }
 .how-grid p {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.8;
   color: #778071;
 }
@@ -602,7 +578,7 @@ nav a.active {
   justify-content: center;
   gap: 10px;
   padding: 40px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 .error-box {
@@ -611,7 +587,7 @@ nav a.active {
   border-radius: 10px;
   color: #8f3321;
   background: #fff7f4;
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin: 15px 0;
 }
 .notice {
@@ -619,7 +595,7 @@ nav a.active {
   border: 1px solid #d4dfd3;
   border-radius: 10px;
   background: #f4f7ef;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.7;
   display: block;
 }
@@ -632,13 +608,13 @@ nav a.active {
 .page-heading h1,
 .detail-heading h1,
 .prose-page h1 {
-  font-size: clamp(30px, 4vw, 45px);
+  font-size: clamp(1.875rem, 4.8vw, 2.8125rem);
   margin: 12px 0;
   line-height: 1.15;
 }
 .page-heading > p:last-child {
   color: var(--muted-foreground);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .editor-page {
   max-width: 1150px;
@@ -654,10 +630,10 @@ nav a.active {
   display: flex;
   gap: 10px;
   align-items: center;
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 .number-circle {
-  font-size: 12px;
+  font-size: 0.75rem;
   border: 1px solid var(--border);
   width: 26px;
   height: 26px;
@@ -675,12 +651,8 @@ nav a.active {
   border-radius: 16px;
   color: #5b6a58;
 }
-.editor-aside h3 {
-  font-size: 15px;
-  margin: 15px 0 10px;
-}
 .editor-aside p {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.8;
 }
 .editor-aside hr {
@@ -700,7 +672,7 @@ nav a.active {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.7;
 }
 .check input {
@@ -725,7 +697,7 @@ nav a.active {
   color: inherit;
 }
 .cover-controls legend {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .approved-preview {
   border: 1px solid #b7ccb5;
@@ -739,7 +711,7 @@ nav a.active {
 }
 .two-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 .civic-map {
@@ -761,14 +733,14 @@ nav a.active {
   background: #f6f7f4;
   border-radius: 12px;
   padding: 20px;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.75;
 }
 .findings section {
   margin: 15px 0;
 }
 .findings h3 {
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin-bottom: 5px;
 }
 .findings ul {
@@ -782,14 +754,14 @@ nav a.active {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .related-option span {
   flex: 1;
 }
 .related-option small {
   display: block;
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted-foreground);
   margin-top: 4px;
 }
@@ -816,7 +788,7 @@ label[data-slot="label"] {
 .detail-top {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .detail-top > a {
   display: flex;
@@ -839,7 +811,7 @@ label[data-slot="label"] {
   border-radius: 15px;
 }
 figcaption {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted-foreground);
   margin-top: 8px;
 }
@@ -852,17 +824,17 @@ figcaption {
 .community-counts span {
   display: flex;
   flex-direction: column;
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted-foreground);
 }
 .community-counts strong {
-  font-size: 27px;
+  font-size: 1.6875rem;
   color: var(--foreground);
 }
 .guide-steps {
   list-style: decimal;
   padding-left: 18px;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.8;
 }
 .guide-steps li {
@@ -875,7 +847,7 @@ figcaption {
 .timeline-item {
   position: relative;
   padding: 0 0 25px 25px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .timeline-item:before {
   content: "";
@@ -898,7 +870,7 @@ figcaption {
   margin: 12px 0;
 }
 .flag-box {
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 15px;
 }
 .flag-box summary {
@@ -926,16 +898,16 @@ figcaption {
   align-items: flex-start;
 }
 .auth-art .auth-tagline {
-  font-size: 36px;
+  font-size: 2.25rem;
   line-height: 1.15;
   margin: 25px 0;
 }
 .auth-art p {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #6b7b63;
 }
 .auth-page h1 {
-  font-size: 30px;
+  font-size: 1.875rem;
 }
 .prose-page {
   max-width: 760px;
@@ -947,10 +919,10 @@ figcaption {
 }
 .prose-page h2 {
   margin: 12px 0;
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 .prose-page p {
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.8;
   color: #616b61;
 }
@@ -987,15 +959,8 @@ figcaption {
   .detail-layout {
     grid-template-columns: 1fr;
   }
-  .filter-note {
-    display: none;
-  }
   .auth-page {
     gap: 20px;
-  }
-  .hero-notes {
-    flex-direction: column;
-    gap: 8px;
   }
 }
 @media (max-width: 600px) {
@@ -1006,11 +971,11 @@ figcaption {
     align-items: flex-start;
   }
   .brand {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .site-header nav {
     gap: 12px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     flex-wrap: wrap;
     justify-content: flex-end;
     max-width: 180px;
@@ -1032,7 +997,7 @@ figcaption {
     margin-bottom: 30px;
   }
   .hero h1 {
-    font-size: 46px;
+    font-size: 2.875rem;
   }
   .hero-actions {
     gap: 20px;
@@ -1074,7 +1039,7 @@ figcaption {
   }
   .section-title h1,
   .section-title h2 {
-    font-size: 23px;
+    font-size: 1.4375rem;
   }
 }
 @media print {
@@ -1094,7 +1059,7 @@ figcaption {
     margin-top: 20px;
   }
   .detail-heading h1 {
-    font-size: 28px;
+    font-size: 1.75rem;
   }
   .evidence-image {
     max-height: 300px;
@@ -1140,14 +1105,14 @@ figcaption {
   flex-shrink: 0;
 }
 .issue-panel-title {
-  font-size: 16px;
+  font-size: 1rem;
   letter-spacing: -0.02em;
 }
 .issue-panel-actions {
   display: flex;
   align-items: center;
   gap: 14px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .panel-close {
   padding: 8px 12px;
@@ -1173,13 +1138,8 @@ figcaption {
   margin: 20px 0 12px;
 }
 .issue-panel .detail-heading h1 {
-  font-size: 28px;
+  font-size: 1.75rem;
   line-height: 1.15;
-}
-.panel-summary {
-  margin-bottom: 20px;
-  color: var(--muted-foreground);
-  font-size: 12px;
 }
 .issue-panel .evidence-image {
   max-height: 280px;
@@ -1225,7 +1185,7 @@ figcaption {
     padding: 16px;
   }
   .issue-panel .detail-heading h1 {
-    font-size: 24px;
+    font-size: 1.5rem;
   }
 }
 
@@ -1243,12 +1203,12 @@ figcaption {
   gap: 20px;
 }
 .report-toolbar a {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 .report-toolbar p {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #526054;
 }
 .report-error {
@@ -1535,7 +1495,10 @@ figcaption {
   padding: 20px;
   border-bottom: 1px solid var(--border);
 }
-.case-dialog-header > div { min-width: 0; overflow-wrap: anywhere; }
+.case-dialog-header > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .case-dialog-body {
   min-height: 0;
   overflow-y: auto;
@@ -1543,6 +1506,53 @@ figcaption {
   padding: 0 20px 20px;
 }
 @media (max-width: 600px) {
-  .case-dialog-header { padding: 16px; }
-  .case-dialog-body { padding: 0 16px 16px; }
+  .case-dialog-header {
+    padding: 16px;
+  }
+  .case-dialog-body {
+    padding: 0 16px 16px;
+  }
+}
+
+/* Larger type must wrap without hiding form labels or actions. */
+h1,
+h2,
+h3,
+.text-link,
+.timeline-item {
+  overflow-wrap: anywhere;
+}
+label[data-slot="label"] {
+  min-width: 0;
+  line-height: 1.4;
+}
+fieldset {
+  min-inline-size: 0;
+}
+.hero-actions,
+.section-title,
+.issue-panel-actions {
+  flex-wrap: wrap;
+}
+.cover-controls > * {
+  min-width: 0;
+}
+.site-header {
+  min-height: 84px;
+  height: auto;
+  padding-block: 18px;
+}
+@media (max-width: 360px) {
+  .two-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .site-header {
+    gap: 10px;
+    padding-inline: 16px;
+  }
+}
+@media print {
+  html {
+    font-size: 100%;
+  }
 }

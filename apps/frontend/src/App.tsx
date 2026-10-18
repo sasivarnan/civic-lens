@@ -134,7 +134,7 @@ function Root() {
             >
               <Badge variant="secondary">
                 <ShieldCheck size={14} />
-                Admin session
+                Admin
               </Badge>
             </Link>
           )}
@@ -142,9 +142,7 @@ function Root() {
             <Plus size={16} />
             Report an issue
           </Link>
-          {session?.user?.demo ? (
-            <span className="text-sm">Demo visitor</span>
-          ) : session?.user ? (
+          {session?.user?.demo ? null : session?.user ? (
             <button
               className="quiet-button"
               disabled={signingOut}
@@ -167,17 +165,16 @@ function Root() {
       <main id="main">
         {session?.demoMode && !isAdmin && (
           <p className="notice" role="status">
-            Hackathon demo. No email sign-in is needed. Reports and locations
-            are public. Use sample evidence.
+            Demo: use sample evidence. Reports and locations are public.
           </p>
         )}
         <ErrorText error={authError} />
         <Outlet />
       </main>
       <footer className="site-footer">
-        <span>CivicLens · Evidence for better neighbourhoods.</span>
+        <span>CivicLens · Community reports</span>
         <span>
-          Community reports. Human review. <Link to="/privacy">Privacy</Link>
+          <Link to="/privacy">Privacy</Link>
           {session?.demoMode && (
             <>
               {" "}
@@ -267,10 +264,6 @@ function Home() {
     <>
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">
-            <span className="live-dot" />
-            BUILT FOR OUR NEIGHBOURHOODS
-          </p>
           <h1>
             Small observations.
             <br />
@@ -290,16 +283,6 @@ function Home() {
               Explore issues
               <ArrowRight size={16} />
             </Link>
-          </div>
-          <div className="hero-notes">
-            <span>
-              <ShieldCheck size={15} />
-              Privacy before upload
-            </span>
-            <span>
-              <Eye size={15} />
-              Evidence, with human review
-            </span>
           </div>
         </div>
         <div className="hero-visual" aria-hidden="true">
@@ -322,13 +305,11 @@ function Home() {
             <span className="live-dot" />
             Bengaluru, one observation at a time
           </div>
-          <span className="visual-label">COMMUNITY EVIDENCE MAP</span>
         </div>
       </section>
       <section className="section" aria-labelledby="recent-issues">
         <div className="section-title">
           <div>
-            <p className="eyebrow">THE COMMUNITY RECORD</p>
             <h2 id="recent-issues">Recent reports</h2>
           </div>
           <Link to="/issues" className="text-link">
@@ -349,7 +330,7 @@ function Home() {
         ) : null}
       </section>
       <section className="how-section">
-        <p className="eyebrow">FROM OBSERVATION TO ACTION</p>
+        <h2>How it works</h2>
         <div className="how-grid">
           {[
             [
@@ -418,7 +399,6 @@ function Explore() {
     <section className="section">
       <div className="section-title">
         <div>
-          <p className="eyebrow">THE COMMUNITY RECORD</p>
           <h1 id="explore-heading" tabIndex={-1}>
             Explore issues
           </h1>
@@ -455,7 +435,6 @@ function Explore() {
             </button>
           )
         })}
-        <span className="filter-note">Published community observations</span>
       </div>
       <ErrorText error={error} />
       {view === "map" && (
@@ -749,9 +728,6 @@ function Editor() {
   return (
     <div className="editor-page">
       <div className="page-heading">
-        <p className="eyebrow">
-          {issueId ? "ADD TO THE RECORD" : "A NEW COMMUNITY OBSERVATION"}
-        </p>
         <h1>{issueId ? "Add later evidence" : "Report an issue"}</h1>
         <p>Keep private details covered. Keep the evidence clear.</p>
       </div>
@@ -762,7 +738,7 @@ function Editor() {
               <h2>
                 <span className="number-circle">1</span>Photo and privacy
               </h2>
-              <Label htmlFor="photo">Select a still photo</Label>
+              <Label htmlFor="photo">Choose photo</Label>
               <label className="text-link cursor-pointer">
                 Take photo on phone
                 <input
@@ -774,10 +750,6 @@ function Editor() {
                   onChange={(e) => void select(e.target.files?.[0])}
                 />
               </label>
-              <p className="text-xs text-muted-foreground">
-                Use the rear camera on a supported phone, or select a saved
-                photo below.
-              </p>
               <Input
                 id="photo"
                 type="file"
@@ -1129,18 +1101,15 @@ function Editor() {
           )}
         </div>
         <aside className="editor-aside">
-          <ShieldCheck size={25} />
-          <h3>Your review comes first.</h3>
-          <p>
-            Only your approved image leaves this device. Face detection can miss
-            private details.
-          </p>
-          <hr />
-          <h3>A shared record, not a verdict.</h3>
-          <p>
-            AI can make mistakes. Check its observations and keep uncertain
-            claims clear.
-          </p>
+          <details>
+            <summary className="cursor-pointer font-semibold">
+              Before you publish
+            </summary>
+            <p className="mt-3">
+              Review the approved photo and AI suggestions. Detection can miss
+              private details. Only your approved image leaves this device.
+            </p>
+          </details>
           <hr />
           <p>
             Unfinished work stays in browser memory. Closing or refreshing this
@@ -1267,24 +1236,18 @@ function Detail({
           {issue.title}
         </h1>
         <div className="flex flex-wrap gap-3">
-          <Badge variant="secondary">{statusLabel(issue.status)}</Badge>
-          {issue.caseProgress && (
-            <Badge variant="outline">
-              {caseStageLabels[issue.caseProgress.stage]}
-            </Badge>
-          )}
+          <Badge variant="secondary">
+            {issue.caseProgress
+              ? caseStageLabels[issue.caseProgress.stage]
+              : statusLabel(issue.status)}
+          </Badge>
+
           <span className="text-sm text-muted-foreground">
             Observed {issue.observationDate} · Submitted{" "}
             {issue.createdAt.slice(0, 10)}
           </span>
         </div>
       </div>
-      {embedded && (
-        <p className="panel-summary">
-          {issue.confirmationCount} observations · {issue.supportCount} upvotes
-          · {categoryLabels[issue.category]}
-        </p>
-      )}
       <div className="detail-layout">
         <div className="space-y-6">
           {issue.assetId && (
@@ -1294,14 +1257,11 @@ function Detail({
                 src={"/api/assets/" + issue.assetId}
                 alt={issue.title}
               />
-              <figcaption>
-                Privacy-edited evidence copy. Not an untouched original.
-              </figcaption>
+              <figcaption>Privacy-edited photo.</figcaption>
             </figure>
           )}
           <Card>
             <CardContent className="pt-6">
-              <p className="eyebrow">RESIDENT REPORT</p>
               <p className="mt-3 whitespace-pre-wrap">{issue.description}</p>
             </CardContent>
           </Card>
@@ -1391,7 +1351,7 @@ function Detail({
           />
           <Card>
             <CardContent className="space-y-4 pt-6">
-              <p className="eyebrow">INCIDENT LOCATION</p>
+              <h2 className="text-lg">Location</h2>
               <p className="text-sm">
                 <MapPin size={14} className="inline" />{" "}
                 {issue.latitude.toFixed(6)}, {issue.longitude.toFixed(6)}
@@ -1410,8 +1370,7 @@ function Detail({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                A confirmation records a member's observation. An upvote
-                requests action.
+                Observations record what people saw. Upvotes request action.
               </p>
               {session?.user ? (
                 <div className="no-print space-y-3">
@@ -1470,7 +1429,6 @@ function Detail({
           {issue.guide && (
             <Card>
               <CardContent className="space-y-3 pt-6">
-                <p className="eyebrow">SUGGESTED NEXT STEPS</p>
                 <h2 className="text-lg">{issue.guide.title}</h2>
                 <ol className="guide-steps">
                   {issue.guide.steps.map((step, i) => (
@@ -1567,7 +1525,6 @@ function AuthPage({ signup = false }: { signup?: boolean }) {
       </div>
       <Card>
         <CardContent className="space-y-5 pt-8">
-          <p className="eyebrow">WELCOME TO CIVICLENS</p>
           <h1>{signup ? "Create your account" : "Sign in"}</h1>
           <p className="text-muted-foreground">
             We will email a one-time sign-in link. No password is required.
@@ -1642,7 +1599,6 @@ function AuthPage({ signup = false }: { signup?: boolean }) {
 function Privacy() {
   return (
     <div className="prose-page">
-      <p className="eyebrow">YOUR EVIDENCE, WITH CARE</p>
       <h1>Privacy and community reporting</h1>
       {[
         [

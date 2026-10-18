@@ -72,7 +72,6 @@ it("shows the case queue with an assignment action and direct case link", async 
   vi.stubGlobal("fetch", fetch)
   render(<AdminWorkspace contentReview={<p>Flag review panel</p>} />)
   await screen.findByRole("heading", { name: item.title })
-  expect(screen.getByText("Assign responsibility")).toBeTruthy()
   expect(
     screen
       .getByRole("link", { name: "Open case: " + item.title })

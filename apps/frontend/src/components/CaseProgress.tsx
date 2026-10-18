@@ -46,7 +46,6 @@ export function CaseProgress({
       aria-label="Case progress"
     >
       <CardContent className="space-y-4 pt-6">
-        <p className="eyebrow">CASE PROGRESS</p>
         <h2 className="text-lg">{caseStageLabels[previous]}</h2>
         <p className="text-xs text-muted-foreground">
           Manual community record. Assignment inside CivicLens does not mean an
@@ -234,14 +233,12 @@ function CaseProgressEditor({
       aria-label="Update case progress"
     >
       <p className="text-xs">
-        All fields and notes below are public. Do not enter private contact
-        details. Record the source of each update. Label sample handoffs as demo
-        data. An internal assignment does not mean that an authority has
-        accepted the case.
+        Updates are public. Do not enter private contact details. Assignment
+        does not mean that an authority has accepted the case.
       </p>
       <fieldset disabled={saving} className="space-y-3">
         <div className="space-y-2">
-          <p className="text-sm font-semibold" id="case-action-label">
+          <p className="sr-only" id="case-action-label">
             Choose an action
           </p>
           <div
@@ -287,10 +284,6 @@ function CaseProgressEditor({
             placeholder="Team or service name"
           />
         </Label>
-        <p className="text-xs text-muted-foreground">
-          Follow-up owner: {owner || ownerName || "CivicLens coordinator"}.
-          Change this in Optional details.
-        </p>
         {stage !== "assigned" && (
           <Label>
             Update note

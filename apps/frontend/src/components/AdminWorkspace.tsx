@@ -116,16 +116,6 @@ function CaseQueue({ stage }: { stage: CaseStage | "all" }) {
                           : "No case update yet"}
                       </dd>
                     </div>
-                    <div>
-                      <dt className="font-semibold">Next action</dt>
-                      <dd>
-                        {current === "not_assigned"
-                          ? "Assign responsibility"
-                          : current === "resolution_reported"
-                            ? "Review repair evidence"
-                            : "Review progress and follow up"}
-                      </dd>
-                    </div>
                   </dl>
                   <Link
                     className="text-link self-center"
@@ -168,11 +158,8 @@ export function AdminWorkspace({
   return (
     <div className="section space-y-5">
       <div className="page-heading">
-        <p className="eyebrow">ADMIN USERS ONLY</p>
         <h1>Admin workspace</h1>
-        <p>
-          Assign responsibility, track follow-up, and review reported repairs.
-        </p>
+        <p>Assign teams and review progress.</p>
       </div>
       <nav className="flex flex-wrap gap-5" aria-label="Admin sections">
         <Link
@@ -228,8 +215,7 @@ export function AdminWorkspace({
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            Public cases, newest reports first. Start with reported cases.
-            Authority updates are manual records.
+            Newest public reports first.
           </p>
           <CaseQueue key={stage + ":" + refresh} stage={stage} />
         </section>

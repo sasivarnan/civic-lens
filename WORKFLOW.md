@@ -499,3 +499,11 @@ Use action buttons in Manage case. Do not require Sent, Acknowledged, or Closed 
 Migration `0004_simple_case_stages` maps Sent and Acknowledged to Assigned, and Closed to Resolution reported. It keeps all other fields and history. It increments each changed case revision to reject open forms with old data. Apply migrations before app startup. The internal key `not_assigned` now has the display label Reported.
 
 Validation: all 101 automated tests, lint, type checks, full build, and unused-code checks passed. The local case smoke check passed the shorter workflow, evidence checks, reopening, history, access checks, stale updates, and queue pagination. The migration was applied locally. Browser checks confirmed action buttons and the short form at desktop and 390-pixel phone widths. The phone dialog had no horizontal overflow.
+
+## Text and labels: updated on 18 October
+
+Use a 120% root text size. Use relative units for app text so headings, controls, captions, and body text follow the same scale. Allow text and actions to wrap on phones. Keep the PDF type scale and printed page sizes unchanged.
+
+Remove repeated section captions, duplicate status badges, and repeated summary counts. Show only AI finding sections that have content. Keep AI disclosure, uncertainty, form labels, privacy approval, and public-location notices. Put repeated publishing help in Before you publish. Keep optional case fields in Optional details.
+
+Validation: all 43 frontend tests, lint, type checks, frontend build, and unused-code checks passed. Browser checks confirmed a 19.2-pixel root size, desktop and 390-pixel home layouts, and report, admin, issue, and case-dialog layouts at 320 pixels. These narrow layouts had no horizontal page overflow. No AI requests or case updates were made during these checks.

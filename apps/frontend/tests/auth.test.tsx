@@ -34,14 +34,22 @@ it("lets a signed-in member continue after an already-used email link", async ()
 })
 it("shows the demo notice and keeps email sign-in available for admins", async () => {
   vi.spyOn(window, "scrollTo").mockImplementation(() => {})
-  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
-    demoMode: true, user: { id: "demo-visitor", demo: true, role: "member" },
-  }))))
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            demoMode: true,
+            user: { id: "demo-visitor", demo: true, role: "member" },
+          })
+        )
+    )
+  )
   const { default: App } = await import("../src/App")
   render(<App />)
-  await screen.findByText(/Hackathon demo. No email sign-in is needed/)
+  await screen.findByText(/Demo: use sample evidence/)
   expect(screen.getByLabelText("Email address")).toBeTruthy()
-  expect(screen.getByText("Demo visitor")).toBeTruthy()
   expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull()
   expect(screen.queryByText("Already signed in")).toBeNull()
 })
