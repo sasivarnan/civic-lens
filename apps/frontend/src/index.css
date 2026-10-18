@@ -1502,3 +1502,47 @@ figcaption {
     break-inside: auto;
   }
 }
+
+/* Case editing sits above the issue map drawer. */
+.case-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  background: rgb(10 25 22 / 55%);
+}
+.case-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1301;
+  width: min(640px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 25%);
+}
+.case-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.case-dialog-header > div { min-width: 0; overflow-wrap: anywhere; }
+.case-dialog-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px 20px;
+}
+@media (max-width: 600px) {
+  .case-dialog-header { padding: 16px; }
+  .case-dialog-body { padding: 0 16px 16px; }
+}

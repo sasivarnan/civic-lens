@@ -60,6 +60,9 @@ it("saves an admin assignment with the current revision and refreshes the issue"
       onUpdated={refresh}
     />
   )
+  expect(screen.queryByRole("dialog")).toBeNull()
+  fireEvent.click(screen.getByRole("button", { name: "Manage case" }))
+  await screen.findByRole("dialog", { name: "Manage case" })
   fireEvent.change(screen.getByLabelText("Authority or service name"), {
     target: { value: "Demo authority" },
   })
@@ -71,6 +74,7 @@ it("saves an admin assignment with the current revision and refreshes the issue"
   })
   fireEvent.submit(screen.getByRole("form", { name: "Update case progress" }))
   await waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
     stage: "assigned",
     owner: "Demo coordinator",
@@ -101,6 +105,8 @@ it("blocks a sent update without a complaint reference and date", async () => {
       onUpdated={async () => {}}
     />
   )
+  fireEvent.click(screen.getByRole("button", { name: "Manage case" }))
+  await screen.findByRole("dialog", { name: "Manage case" })
   fireEvent.change(screen.getByLabelText("Next progress stage"), {
     target: { value: "sent" },
   })
@@ -113,4 +119,68 @@ it("blocks a sent update without a complaint reference and date", async () => {
     expect.stringContaining("handoff date and complaint reference")
   )
   expect(fetch).not.toHaveBeenCalled()
+})
+
+it("closes the case editor and returns focus to its trigger", async () => {
+  render(
+    <CaseProgress
+      issue={issue}
+      canManage
+      ownerName="Team"
+      onUpdated={async () => {}}
+    />
+  )
+  const trigger = screen.getByRole("button", { name: "Manage case" })
+  trigger.focus()
+  fireEvent.click(trigger)
+  await screen.findByRole("dialog", { name: "Manage case" })
+  fireEvent.click(screen.getByRole("button", { name: "Close" }))
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  await waitFor(() => expect(document.activeElement).toBe(trigger))
+})
+
+it("keeps the dialog and entered note when the server rejects an update", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: "This case changed. Refresh and try again.",
+          }),
+          { status: 409 }
+        )
+    )
+  )
+  const refresh = vi.fn(async () => {})
+  render(
+    <CaseProgress
+      issue={issue}
+      canManage
+      ownerName="Team"
+      onUpdated={refresh}
+    />
+  )
+  fireEvent.click(screen.getByRole("button", { name: "Manage case" }))
+  await screen.findByRole("dialog", { name: "Manage case" })
+  fireEvent.change(screen.getByLabelText("Authority or service name"), {
+    target: { value: "Demo authority" },
+  })
+  fireEvent.change(screen.getByLabelText("Public source link"), {
+    target: { value: "https://example.com/source" },
+  })
+  fireEvent.change(screen.getByLabelText("Public update and source details"), {
+    target: { value: "Demo update for review." },
+  })
+  fireEvent.submit(screen.getByRole("form", { name: "Update case progress" }))
+  expect(await screen.findByRole("alert")).toBeTruthy()
+  expect(screen.getByRole("dialog", { name: "Manage case" })).toBeTruthy()
+  expect(
+    (
+      screen.getByLabelText(
+        "Public update and source details"
+      ) as HTMLTextAreaElement
+    ).value
+  ).toBe("Demo update for review.")
+  expect(refresh).not.toHaveBeenCalled()
 })

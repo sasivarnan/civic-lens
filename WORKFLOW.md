@@ -24,7 +24,7 @@ Validation on 18 October: all 69 automated tests, lint, type checks, build, and 
 
 Keep incident status separate from case progress. Incident status remains Reported, Resolution reported, or Reopened. Case progress has eight stages: Not assigned, Assigned internally, Sent to authority, Acknowledgement reported, Work in progress reported, Resolution reported, Case closed after review, and Reopened.
 
-The admin uses the Case progress card on the issue page. Record the authority or service name, public follow-up owner, source URL, and update note. Check jurisdiction manually. Do not imply that an internal assignment is an authority acknowledgement. Sent, acknowledged, and in-progress updates require a complaint reference and handoff date. No complaint is sent by this application. Label sample handoffs as demo data.
+The issue page shows a short Case progress summary. Open Latest update details to read the reference, handoff date, note, and source. An admin selects Manage case to open a dialog with the update form. The dialog also works above the map drawer. Close or Escape returns focus to Manage case. Record the authority or service name, public follow-up owner, source URL, and update note. Check jurisdiction manually. Do not imply that an internal assignment is an authority acknowledgement. Sent, acknowledged, and in-progress updates require a complaint reference and handoff date. No complaint is sent by this application. Label sample handoffs as demo data.
 
 `PATCH /api/issues/:id/progress` requires a real admin session and the configured request origin. The backend validates fields, the allowed stage change, and the current revision. It locks the issue row during the update. Resolution, closure, and reopening require public later photo evidence from that issue. Reopening must select different evidence from the previous case update. The old moderation status route rejects status changes on cases that use this workflow.
 
@@ -38,7 +38,7 @@ The local case smoke check uses real admin email sign-in, PostgreSQL, and privat
 
 ## Admin workspace: implemented on 18 October
 
-Open `/moderation` with a real admin email session. The header shows an Admin session badge that links to the workspace. Hide the hackathon demo banner for real admin sessions. Demo visitors keep the banner. Cases is the default section. It starts with Not assigned. Each row shows the issue, case stage, authority, public follow-up owner, last case update, and next action. Open case leads to the full issue page and moves focus to Case progress. Keep case editing on that page.
+Open `/moderation` with a real admin email session. The header shows an Admin session badge that links to the workspace. Hide the hackathon demo banner for real admin sessions. Demo visitors keep the banner. Cases is the default section. It starts with Not assigned. Each row shows the issue, case stage, authority, public follow-up owner, last case update, and next action. Open case leads to the full issue page and moves focus to Case progress. Use Manage case on that page to open the update dialog.
 
 The section and stage are URL parameters. Refresh and browser Back retain those choices. The queue has stage filters, refresh, and Load more cases. It lists public cases only. Content review is a separate section for flagged content. It keeps hide and restore controls with a required reason. Loading, empty results, and errors use separate messages.
 
@@ -485,3 +485,9 @@ Six mocked hosted-provider tests cover metadata-free image requests, system inst
 Local model tests found category errors, unsupported claims, Kannada errors, and unclear similarity results. User review remains required. These tests do not establish browser support or public-service reliability. Browser coordinate entry and map display are implemented. GPS metadata variants and device permission outcomes still need a complete test set.
 
 Face detection does not certify complete privacy. Fixed guides must not invent government procedures or promise government action. New evidence must not resolve an issue automatically.
+
+## Case dialog: updated on 18 October
+
+Keep the stage, authority, follow-up owner, and update time on the issue page. Put the full admin form in the Manage case dialog. Keep the dialog header and Close control visible while the form scrolls. Retain the same required fields, evidence checks, and revision checks. Close the dialog after a saved update. Keep the form and error visible if the request fails.
+
+Validation: all 42 frontend tests, lint, type checks, frontend build, and unused-code checks passed. Browser checks confirmed desktop and 390-pixel phone layouts, form scrolling, required-note validation, Escape, focus return, and dialog use above the map drawer. The phone dialog had no horizontal overflow. No case data changed during these browser checks.

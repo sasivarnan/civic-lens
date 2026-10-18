@@ -1383,7 +1383,7 @@ function Detail({
         </div>
         <aside className="space-y-5">
           <CaseProgress
-            key={issue.id + ":" + (issue.caseRevision ?? 0)}
+            key={issue.id}
             issue={issue}
             canManage={session?.user?.role === "admin" && !session.user.demo}
             ownerName={session?.user?.name ?? "CivicLens coordinator"}
