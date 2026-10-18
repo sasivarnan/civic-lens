@@ -31,6 +31,35 @@ const issue: Issue = {
   confirmationCount: 0,
   caseRevision: 4,
 }
+const assigned: Issue = {
+  ...issue,
+  caseProgress: {
+    stage: "assigned",
+    authority: "Demo team",
+    owner: "Team",
+    reference: "",
+    sentDate: "",
+    sourceUrl: "",
+    note: "Demo assignment.",
+    updatedAt: "2026-10-18T06:00:00Z",
+  },
+}
+async function open(current = issue, refresh = async () => {}) {
+  render(
+    <CaseProgress
+      issue={current}
+      canManage
+      ownerName="Demo coordinator"
+      onUpdated={refresh}
+    />
+  )
+  expect(screen.queryByRole("dialog")).toBeNull()
+  fireEvent.click(screen.getByRole("button", { name: "Manage case" }))
+  await screen.findByRole("dialog", { name: "Manage case" })
+}
+function submit() {
+  fireEvent.submit(screen.getByRole("form", { name: "Update case progress" }))
+}
 it("shows public progress without admin controls", () => {
   render(
     <CaseProgress
@@ -40,106 +69,76 @@ it("shows public progress without admin controls", () => {
       onUpdated={async () => {}}
     />
   )
-  expect(screen.getByRole("heading", { name: "Not assigned" })).toBeTruthy()
-  expect(
-    screen.queryByRole("form", { name: "Update case progress" })
-  ).toBeNull()
+  expect(screen.getByRole("heading", { name: "Reported" })).toBeTruthy()
+  expect(screen.queryByRole("button", { name: "Manage case" })).toBeNull()
   expect(
     screen.getByText(/does not mean an authority has accepted/)
   ).toBeTruthy()
 })
-it("saves an admin assignment with the current revision and refreshes the issue", async () => {
-  const fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true })))
+it("assigns with only a team name and an automatic owner", async () => {
+  const fetch = vi.fn<
+    (url: unknown, options: RequestInit) => Promise<Response>
+  >(async () => new Response(JSON.stringify({ ok: true })))
   vi.stubGlobal("fetch", fetch)
   const refresh = vi.fn(async () => {})
-  render(
-    <CaseProgress
-      issue={issue}
-      canManage
-      ownerName="Demo coordinator"
-      onUpdated={refresh}
-    />
-  )
-  expect(screen.queryByRole("dialog")).toBeNull()
-  fireEvent.click(screen.getByRole("button", { name: "Manage case" }))
-  await screen.findByRole("dialog", { name: "Manage case" })
-  fireEvent.change(screen.getByLabelText("Authority or service name"), {
+  await open(issue, refresh)
+  fireEvent.change(screen.getByLabelText("Assigned team"), {
     target: { value: "Demo authority" },
   })
-  fireEvent.change(screen.getByLabelText("Public source link"), {
-    target: { value: "https://example.com/source" },
-  })
-  fireEvent.change(screen.getByLabelText("Public update and source details"), {
-    target: { value: "Demo only. Check the responsible authority." },
-  })
-  fireEvent.submit(screen.getByRole("form", { name: "Update case progress" }))
+  submit()
   await waitFor(() => expect(refresh).toHaveBeenCalledOnce())
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-  expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
+  expect(JSON.parse(fetch.mock.calls[0][1].body as string)).toMatchObject({
     stage: "assigned",
     owner: "Demo coordinator",
     revision: 4,
+    note: "",
+    sourceUrl: "",
   })
 })
-it("blocks a sent update without a complaint reference and date", async () => {
+it("starts work with a note and no complaint reference or date", async () => {
+  const fetch = vi.fn<
+    (url: unknown, options: RequestInit) => Promise<Response>
+  >(async () => new Response(JSON.stringify({ ok: true })))
+  vi.stubGlobal("fetch", fetch)
+  await open(assigned)
+  fireEvent.change(screen.getByLabelText("Update note"), {
+    target: { value: "Demo team reports that work has started." },
+  })
+  submit()
+  await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+  expect(JSON.parse(fetch.mock.calls[0][1].body as string)).toMatchObject({
+    stage: "in_progress",
+    reference: "",
+    sentDate: "",
+  })
+})
+it("permits a direct resolution action but blocks it without later evidence", async () => {
   const fetch = vi.fn()
   vi.stubGlobal("fetch", fetch)
-  const assigned = {
-    ...issue,
-    caseProgress: {
-      stage: "assigned" as const,
-      authority: "Demo authority",
-      owner: "Team",
-      reference: "",
-      sentDate: "",
-      sourceUrl: "https://example.com",
-      note: "Demo assignment.",
-      updatedAt: "2026-10-18T06:00:00Z",
-    },
-  }
-  render(
-    <CaseProgress
-      issue={assigned}
-      canManage
-      ownerName=""
-      onUpdated={async () => {}}
-    />
-  )
-  fireEvent.click(screen.getByRole("button", { name: "Manage case" }))
-  await screen.findByRole("dialog", { name: "Manage case" })
-  fireEvent.change(screen.getByLabelText("Next progress stage"), {
-    target: { value: "sent" },
+  await open(assigned)
+  fireEvent.click(screen.getByRole("button", { name: "Report resolution" }))
+  fireEvent.change(screen.getByLabelText("Update note"), {
+    target: { value: "Demo repair reported for review." },
   })
-  fireEvent.change(screen.getByLabelText("Public update and source details"), {
-    target: { value: "Demo handoff test." },
-  })
-  fireEvent.submit(screen.getByRole("form", { name: "Update case progress" }))
+  submit()
   expect(await screen.findByRole("alert")).toHaveProperty(
     "textContent",
-    expect.stringContaining("handoff date and complaint reference")
+    expect.stringContaining("later photo evidence")
   )
   expect(fetch).not.toHaveBeenCalled()
 })
-
-it("closes the case editor and returns focus to its trigger", async () => {
-  render(
-    <CaseProgress
-      issue={issue}
-      canManage
-      ownerName="Team"
-      onUpdated={async () => {}}
-    />
-  )
-  const trigger = screen.getByRole("button", { name: "Manage case" })
-  trigger.focus()
-  fireEvent.click(trigger)
-  await screen.findByRole("dialog", { name: "Manage case" })
+it("closes the editor and returns focus to its trigger", async () => {
+  await open()
   fireEvent.click(screen.getByRole("button", { name: "Close" }))
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-  await waitFor(() => expect(document.activeElement).toBe(trigger))
+  await waitFor(() =>
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Manage case" })
+    )
+  )
 })
-
-it("keeps the dialog and entered note when the server rejects an update", async () => {
+it("keeps entered text when the server rejects an update", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(
@@ -153,34 +152,15 @@ it("keeps the dialog and entered note when the server rejects an update", async 
     )
   )
   const refresh = vi.fn(async () => {})
-  render(
-    <CaseProgress
-      issue={issue}
-      canManage
-      ownerName="Team"
-      onUpdated={refresh}
-    />
-  )
-  fireEvent.click(screen.getByRole("button", { name: "Manage case" }))
-  await screen.findByRole("dialog", { name: "Manage case" })
-  fireEvent.change(screen.getByLabelText("Authority or service name"), {
-    target: { value: "Demo authority" },
-  })
-  fireEvent.change(screen.getByLabelText("Public source link"), {
-    target: { value: "https://example.com/source" },
-  })
-  fireEvent.change(screen.getByLabelText("Public update and source details"), {
+  await open(assigned, refresh)
+  fireEvent.change(screen.getByLabelText("Update note"), {
     target: { value: "Demo update for review." },
   })
-  fireEvent.submit(screen.getByRole("form", { name: "Update case progress" }))
+  submit()
   expect(await screen.findByRole("alert")).toBeTruthy()
   expect(screen.getByRole("dialog", { name: "Manage case" })).toBeTruthy()
   expect(
-    (
-      screen.getByLabelText(
-        "Public update and source details"
-      ) as HTMLTextAreaElement
-    ).value
+    (screen.getByLabelText("Update note") as HTMLTextAreaElement).value
   ).toBe("Demo update for review.")
   expect(refresh).not.toHaveBeenCalled()
 })

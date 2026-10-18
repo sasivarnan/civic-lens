@@ -14,7 +14,11 @@ import { HttpError } from "./security.js";
 export async function updateCase(c: Context) {
   const user = await admin(c);
   const id = z.string().uuid().parse(c.req.param("id"));
-  const input = caseProgressSchema.parse(await c.req.json());
+  const submitted = z.record(z.string(), z.unknown()).parse(await c.req.json());
+  const input = caseProgressSchema.parse({
+    ...submitted,
+    owner: submitted.owner || user.name || "CivicLens coordinator",
+  });
   const { revision, ...fields } = input;
   await sql.begin(async (tx) => {
     const [issue] =
@@ -48,16 +52,30 @@ export async function updateCase(c: Context) {
           "Select public later photo evidence from this issue.",
         );
     }
-    const progress = { ...fields, updatedAt: new Date().toISOString() };
-    const status = ["resolution_reported", "closed"].includes(input.stage)
-      ? "resolution_reported"
-      : input.stage === "reopened"
-        ? "reopened"
-        : ["resolution_reported", "closed"].includes(previous)
+    const note =
+      fields.note ||
+      "Internal team assignment. Authority acceptance is not confirmed.";
+    const progress = { ...fields, note, updatedAt: new Date().toISOString() };
+    const status =
+      input.stage === "resolution_reported"
+        ? "resolution_reported"
+        : input.stage === "reopened"
           ? "reopened"
-          : issue.status;
+          : previous === "resolution_reported"
+            ? "reopened"
+            : issue.status;
     await tx`UPDATE issues SET case_progress=${tx.json(progress)},case_revision=case_revision+1,status=${status} WHERE id=${id}`;
-    const summary = `${caseStageLabels[input.stage]}. Authority: ${input.authority || "Not assigned"}. Follow-up owner: ${input.owner || "Not assigned"}. Reference: ${input.reference || "Not recorded"}. Handoff date: ${input.sentDate || "Not recorded"}. Source: ${input.sourceUrl || "Not recorded"}. ${input.note}`;
+    const summary = [
+      caseStageLabels[input.stage] + ".",
+      "Team: " + input.authority + ".",
+      "Follow-up owner: " + input.owner + ".",
+      input.reference && "Reference: " + input.reference + ".",
+      input.sentDate && "Handoff date: " + input.sentDate + ".",
+      input.sourceUrl && "Source: " + input.sourceUrl + ".",
+      note,
+    ]
+      .filter(Boolean)
+      .join(" ");
     await tx`INSERT INTO events(id,issue_id,actor_id,kind,reason,evidence_id) VALUES(${randomUUID()},${id},${user.id},'case_updated',${summary},${input.evidenceId ?? null})`;
   });
   c.header("Cache-Control", "no-store");

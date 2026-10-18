@@ -116,9 +116,9 @@ try {
   const payload = {
     authority: "Demo authority (sample only)",
     owner: "Demo coordinator",
-    reference: "DEMO-CASE-001",
-    sentDate: new Date().toISOString().slice(0, 10),
-    sourceUrl: "https://example.com/demo",
+    reference: "",
+    sentDate: "",
+    sourceUrl: "",
     note: "Demo only. No authority was contacted. This checks the case workflow.",
     evidenceId: evidenceIds[0],
   };
@@ -133,11 +133,8 @@ try {
   assert.equal((await update("in_progress")).status, 409);
   for (const stage of [
     "assigned",
-    "sent",
-    "acknowledged",
     "in_progress",
     "resolution_reported",
-    "closed",
   ] as CaseStage[]) {
     assert.equal((await update(stage)).status, 200, `Stage failed: ${stage}`);
     revision++;
@@ -146,7 +143,7 @@ try {
     assert.equal(current.caseRevision, revision);
   }
   assert.equal(
-    (await update("closed", { revision: revision - 1 })).status,
+    (await update("resolution_reported", { revision: revision - 1 })).status,
     409,
   );
   assert.equal(
@@ -163,7 +160,7 @@ try {
   assert.equal(reopened.status, "reopened");
   assert.equal(
     reopened.history.filter((item: any) => item.kind === "case_updated").length,
-    7,
+    4,
   );
   const vote = { support: true, confirmationDate: null, revision: 0 };
   assert.equal(
@@ -181,7 +178,7 @@ try {
     1,
   );
   console.log(
-    "PASS assignment, handoff, acknowledgement, work progress, evidence-linked resolution, closure, reopening, public history, upvote, access checks, and stale-update rejection",
+    "PASS assignment, work progress, evidence-linked resolution, reopening, public history, upvote, access checks, and stale-update rejection",
   );
   assert.equal((await member.call("/moderation/cases")).status, 401);
   assert.equal(
@@ -190,7 +187,7 @@ try {
   );
   const queueProgress = {
     ...payload,
-    stage: "acknowledged",
+    stage: "in_progress",
     updatedAt: new Date().toISOString(),
   };
   await sql.begin(async (tx) => {
@@ -206,14 +203,14 @@ try {
   let pages = 0;
   do {
     const path =
-      "/moderation/cases?stage=acknowledged" +
+      "/moderation/cases?stage=in_progress" +
       (nextCursor ? "&cursor=" + encodeURIComponent(nextCursor) : "");
     const response = await admin.call(path);
     assert.equal(response.status, 200);
     const page = (await response.json()) as any;
     for (const item of page.cases) {
       assert(!listed.has(item.id), "Duplicate case across pages.");
-      assert.equal(item.caseProgress.stage, "acknowledged");
+      assert.equal(item.caseProgress.stage, "in_progress");
       listed.add(item.id);
     }
     nextCursor = page.nextCursor;

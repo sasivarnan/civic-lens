@@ -84,86 +84,65 @@ export type ReportInput = z.infer<typeof reportSchema>;
 export const caseStages = [
   "not_assigned",
   "assigned",
-  "sent",
-  "acknowledged",
   "in_progress",
   "resolution_reported",
-  "closed",
   "reopened",
 ] as const;
 export type CaseStage = (typeof caseStages)[number];
 export const caseStageLabels: Record<CaseStage, string> = {
-  not_assigned: "Not assigned",
-  assigned: "Assigned internally",
-  sent: "Sent to authority",
-  acknowledged: "Acknowledgement reported",
-  in_progress: "Work in progress reported",
+  not_assigned: "Reported",
+  assigned: "Assigned",
+  in_progress: "In progress",
   resolution_reported: "Resolution reported",
-  closed: "Case closed after review",
   reopened: "Reopened",
 };
 export const caseTransitions: Record<CaseStage, readonly CaseStage[]> = {
-  not_assigned: ["not_assigned", "assigned"],
-  assigned: ["assigned", "not_assigned", "sent", "resolution_reported"],
-  sent: ["sent", "assigned", "acknowledged", "resolution_reported"],
-  acknowledged: ["acknowledged", "in_progress", "resolution_reported"],
+  not_assigned: ["assigned"],
+  assigned: ["assigned", "in_progress", "resolution_reported"],
   in_progress: ["in_progress", "resolution_reported"],
-  resolution_reported: ["resolution_reported", "closed", "reopened"],
-  closed: ["closed", "reopened"],
-  reopened: [
-    "reopened",
-    "assigned",
-    "sent",
-    "acknowledged",
-    "in_progress",
-    "resolution_reported",
-  ],
+  resolution_reported: ["resolution_reported", "reopened"],
+  reopened: ["assigned", "in_progress", "resolution_reported", "reopened"],
 };
 export const caseProgressSchema = z
   .object({
     stage: z.enum(caseStages),
     authority: z.string().trim().max(160),
     owner: z.string().trim().max(100),
-    reference: z.string().trim().max(120),
-    sentDate: z.union([z.literal(""), observationDateSchema]),
-    sourceUrl: z.union([
-      z.literal(""),
-      z
-        .string()
-        .url()
-        .max(500)
-        .refine((v) => v.startsWith("https://"), "Use an HTTPS source link."),
-    ]),
-    note: z.string().trim().min(10).max(1000),
+    reference: z.string().trim().max(120).default(""),
+    sentDate: z.union([z.literal(""), observationDateSchema]).default(""),
+    sourceUrl: z
+      .union([
+        z.literal(""),
+        z
+          .string()
+          .url()
+          .max(500)
+          .refine((v) => v.startsWith("https://"), "Use an HTTPS source link."),
+      ])
+      .default(""),
+    note: z.string().trim().max(1000).default(""),
     evidenceId: z.string().uuid().optional(),
     revision: z.number().int().min(0),
   })
   .superRefine((value, ctx) => {
-    if (
-      value.stage !== "not_assigned" &&
-      (!value.authority || !value.owner || !value.sourceUrl)
-    )
+    if (value.stage !== "not_assigned" && (!value.authority || !value.owner))
       ctx.addIssue({
         code: "custom",
-        message:
-          "Select an authority, a public follow-up owner, and a source link.",
+        message: "Enter a team name and a public follow-up owner.",
       });
-    if (
-      ["sent", "acknowledged", "in_progress"].includes(value.stage) &&
-      (!value.reference || !value.sentDate)
-    )
+    if (value.stage !== "assigned" && value.note.length < 10)
       ctx.addIssue({
         code: "custom",
-        message: "Record the handoff date and complaint reference.",
+        message: "Enter an update note with at least 10 characters.",
       });
     if (
-      ["resolution_reported", "closed", "reopened"].includes(value.stage) &&
+      ["resolution_reported", "reopened"].includes(value.stage) &&
       !value.evidenceId
     )
       ctx.addIssue({
         code: "custom",
         message:
-          "Select public later evidence for resolution, closure, or reopening.",
+          "Select public later photo evidence for resolution or reopening.",
       });
   });
 type CaseProgressInput = z.infer<typeof caseProgressSchema>;

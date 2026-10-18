@@ -152,15 +152,17 @@ Keep model findings separate from reviewed content. Do not use an **AI verified*
 
 Sign in with the local admin account, `admin@civiclens.test`. Open the email link in Mailpit. Select Admin in the navigation, or open `/moderation`. Demo visitors cannot read the admin queue or change case progress.
 
-The Admin workspace opens the Cases section with the Not assigned filter. Each case shows its stage, authority, follow-up owner, last update, and next action. Filter by stage, refresh the queue, or load more cases. Open case leads to the case controls on the full issue page. The section and stage stay in the URL for refresh and browser Back. The queue lists public cases only.
+The Admin workspace opens the Cases section with the Reported filter. Each case shows its stage, authority, follow-up owner, last update, and next action. Filter by stage, refresh the queue, or load more cases. Open case leads to the case controls on the full issue page. The section and stage stay in the URL for refresh and browser Back. The queue lists public cases only.
 
 Content review is a separate section for flagged content. Hide or restore content with a reason. Visibility changes do not establish resolution. Loading, empty results, and failed requests have separate messages.
 
-The stages are Not assigned, Assigned internally, Sent to authority, Acknowledgement reported, Work in progress reported, Resolution reported, Case closed after review, and Reopened. The server checks each stage change.
+The main stages are Reported, Assigned, In progress, and Resolution reported. Reopened is an exception. Assigned cases can move directly to Resolution reported. The server checks each stage change.
 
-Record the authority or service, public follow-up owner, source link, and update note. Sent, acknowledged, and work-in-progress stages also require a complaint reference and handoff date. The coordinator must check the responsible agency. CivicLens does not select jurisdiction or send a government complaint.
+Select Manage case on an issue. Use action buttons to assign a team, start work, report resolution, or reopen a case. Assignment needs only a team name. The current admin is the default follow-up owner, and the server records an assignment note. Work updates need a short note. Complaint reference, handoff date, source link, and owner changes are in Optional details. The coordinator must check the responsible agency. CivicLens does not send a government complaint.
 
-Resolution, closure, and reopening require public later photo evidence from the same issue. Reopening must use different evidence from the previous case update. Case closure is a coordinator decision; it does not prove official closure. Each update has a server date and a public history entry. A revision check rejects stale updates. The PDF includes case progress and history.
+Resolution and reopening require public later photo evidence from the same issue and a short note. Reopening must use different evidence from the previous case update. Resolution reported does not prove official closure. Each update has a server date and a public history entry. A revision check rejects stale updates. The PDF includes case progress and history.
+
+Migration `0004_simple_case_stages` maps old Sent and Acknowledged records to Assigned, and Closed records to Resolution reported. It keeps existing fields and history and increments the case revision. Run database migrations before starting the updated app.
 
 Members can upvote an issue separately from a dated observation. One account has one active upvote per issue. Demo browser identities do not prove unique people.
 

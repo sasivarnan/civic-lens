@@ -113,12 +113,40 @@ it("rejects stale updates and unavailable stage transitions", async () => {
   ).toBe(409);
   expect(state.writes).toHaveLength(0);
 });
-it("requires a reference and date for a handoff", async () => {
+it("starts work without a handoff reference or date", async () => {
   state.stage = "assigned";
-  expect((await update({ stage: "sent" })).status).toBe(400);
+  expect((await update({ stage: "in_progress", sourceUrl: "" })).status).toBe(
+    200,
+  );
+});
+it("assigns with only a team name and an automatic owner and note", async () => {
+  const result = await app.request(`/api/issues/${id}/progress`, {
+    method: "PATCH",
+    headers: {
+      origin: "http://localhost:5173",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      stage: "assigned",
+      authority: "Demo team",
+      revision: 0,
+    }),
+  });
+  expect(result.status).toBe(200);
+});
+it.each(["sent", "acknowledged", "closed"])(
+  "rejects removed stage %s",
+  async (stage) => {
+    expect((await update({ stage })).status).toBe(400);
+    expect(state.writes).toHaveLength(0);
+  },
+);
+it("requires a useful note for work progress", async () => {
+  state.stage = "assigned";
+  expect((await update({ stage: "in_progress", note: "" })).status).toBe(400);
   expect(state.writes).toHaveLength(0);
 });
-it.each(["resolution_reported", "closed", "reopened"])(
+it.each(["resolution_reported", "reopened"])(
   "requires linked public later evidence for %s",
   async (stage) => {
     state.stage =
@@ -139,7 +167,6 @@ it("rejects unsafe source links, missing ownership, and future handoff dates", (
   for (const fields of [
     { sourceUrl: "javascript:alert(1)" },
     { sourceUrl: "invalid" },
-    { owner: "" },
     { authority: "" },
     { sentDate: "2999-01-01" },
   ])

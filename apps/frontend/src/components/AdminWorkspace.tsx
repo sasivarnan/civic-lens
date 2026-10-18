@@ -97,7 +97,7 @@ function CaseQueue({ stage }: { stage: CaseStage | "all" }) {
                   </div>
                   <dl className="grid min-w-0 gap-3 text-sm sm:grid-cols-2">
                     <div className="min-w-0 break-words">
-                      <dt className="font-semibold">Authority / service</dt>
+                      <dt className="font-semibold">Assigned team</dt>
                       <dd>{issue.caseProgress?.authority || "Not assigned"}</dd>
                     </div>
                     <div className="min-w-0 break-words">
@@ -123,9 +123,7 @@ function CaseQueue({ stage }: { stage: CaseStage | "all" }) {
                           ? "Assign responsibility"
                           : current === "resolution_reported"
                             ? "Review repair evidence"
-                            : current === "closed"
-                              ? "Review record if challenged"
-                              : "Review progress and follow up"}
+                            : "Review progress and follow up"}
                       </dd>
                     </div>
                   </dl>
@@ -230,7 +228,7 @@ export function AdminWorkspace({
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            Public cases, newest reports first. Start with unassigned cases.
+            Public cases, newest reports first. Start with reported cases.
             Authority updates are manual records.
           </p>
           <CaseQueue key={stage + ":" + refresh} stage={stage} />

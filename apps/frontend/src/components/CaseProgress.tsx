@@ -54,7 +54,7 @@ export function CaseProgress({
         </p>
         <dl className="space-y-2 text-sm">
           <div>
-            <dt className="font-semibold">Authority / service</dt>
+            <dt className="font-semibold">Assigned team</dt>
             <dd>{progress?.authority || "Not assigned"}</dd>
           </div>
           <div>
@@ -104,12 +104,6 @@ export function CaseProgress({
               </a>
             )}
           </details>
-        )}
-        {previous === "closed" && (
-          <p className="text-xs">
-            Case closed after community review. This is not proof of official
-            closure.
-          </p>
         )}
         {!canManage && (
           <p className="text-xs">
@@ -178,14 +172,20 @@ function CaseProgressEditor({
 }) {
   const progress = issue.caseProgress
   const previous = progress?.stage ?? "not_assigned"
-  const [stage, setStage] = useState<CaseStage>(progress?.stage ?? "assigned")
+  const [stage, setStage] = useState<CaseStage>(
+    previous === "not_assigned" || previous === "reopened"
+      ? "assigned"
+      : previous === "assigned"
+        ? "in_progress"
+        : previous === "in_progress"
+          ? "resolution_reported"
+          : previous
+  )
   const [authority, setAuthority] = useState(progress?.authority ?? "")
   const [owner, setOwner] = useState(progress?.owner ?? ownerName)
   const [reference, setReference] = useState(progress?.reference ?? "")
   const [sentDate, setSentDate] = useState(progress?.sentDate ?? "")
-  const [sourceUrl, setSourceUrl] = useState(
-    progress?.sourceUrl ?? issue.guide?.source ?? ""
-  )
+  const [sourceUrl, setSourceUrl] = useState(progress?.sourceUrl ?? "")
   const [evidenceId, setEvidenceId] = useState(progress?.evidenceId ?? "")
   const [note, setNote] = useState("")
   const [error, setError] = useState("")
@@ -204,7 +204,10 @@ function CaseProgressEditor({
       sentDate,
       sourceUrl,
       note,
-      evidenceId: evidenceId || undefined,
+      evidenceId:
+        stage === "resolution_reported" || stage === "reopened"
+          ? evidenceId || undefined
+          : undefined,
       revision: issue.caseRevision ?? 0,
     })
     if (!input.success) {
@@ -233,98 +236,149 @@ function CaseProgressEditor({
       <p className="text-xs">
         All fields and notes below are public. Do not enter private contact
         details. Record the source of each update. Label sample handoffs as demo
-        data.
+        data. An internal assignment does not mean that an authority has
+        accepted the case.
       </p>
       <fieldset disabled={saving} className="space-y-3">
-        <Label>
-          Next progress stage
-          <select
-            className="privacy-effect"
-            value={stage}
-            onChange={(e) => setStage(e.target.value as CaseStage)}
+        <div className="space-y-2">
+          <p className="text-sm font-semibold" id="case-action-label">
+            Choose an action
+          </p>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-labelledby="case-action-label"
           >
             {caseTransitions[previous].map((value) => (
-              <option key={value} value={value}>
-                {caseStageLabels[value]}
-              </option>
+              <Button
+                key={value}
+                type="button"
+                variant={stage === value ? "default" : "outline"}
+                aria-pressed={stage === value}
+                onClick={() => {
+                  setStage(value)
+                  if (value === "reopened" && previous !== "reopened")
+                    setEvidenceId("")
+                }}
+              >
+                {value === previous
+                  ? value === "assigned"
+                    ? "Update assignment"
+                    : value === "resolution_reported"
+                      ? "Update resolution"
+                      : "Update note"
+                  : value === "assigned"
+                    ? "Assign team"
+                    : value === "in_progress"
+                      ? "Start work"
+                      : value === "resolution_reported"
+                        ? "Report resolution"
+                        : "Reopen"}
+              </Button>
             ))}
-          </select>
-        </Label>
+          </div>
+        </div>
         <Label>
-          Authority or service name
+          Assigned team
           <Input
             value={authority}
             maxLength={160}
             onChange={(e) => setAuthority(e.target.value)}
-            placeholder="Check the responsible agency before assignment"
+            placeholder="Team or service name"
           />
         </Label>
-        <Label>
-          Public follow-up owner
-          <Input
-            value={owner}
-            maxLength={100}
-            onChange={(e) => setOwner(e.target.value)}
-            placeholder="Coordinator name or team"
-          />
-        </Label>
-        <Label>
-          Complaint reference
-          <Input
-            value={reference}
-            maxLength={120}
-            onChange={(e) => setReference(e.target.value)}
-          />
-        </Label>
-        <Label>
-          Handoff date
-          <Input
-            type="date"
-            value={sentDate}
-            onChange={(e) => setSentDate(e.target.value)}
-          />
-        </Label>
-        <Label>
-          Public source link
-          <Input
-            type="url"
-            value={sourceUrl}
-            maxLength={500}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            placeholder="https://"
-          />
-        </Label>
-        <Label>
-          Later evidence for resolution or reopening
-          <select
-            className="privacy-effect"
-            value={evidenceId}
-            onChange={(e) => setEvidenceId(e.target.value)}
-          >
-            <option value="">Select later photo evidence</option>
-            {evidence.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.observationDate} — {item.description.slice(0, 70)}
-              </option>
-            ))}
-          </select>
-        </Label>
-        {!evidence.length && (
-          <p className="text-xs">
-            Add public later photo evidence before resolution, closure, or
-            reopening. Load earlier history if needed.
-          </p>
+        <p className="text-xs text-muted-foreground">
+          Follow-up owner: {owner || ownerName || "CivicLens coordinator"}.
+          Change this in Optional details.
+        </p>
+        {stage !== "assigned" && (
+          <Label>
+            Update note
+            <Textarea
+              value={note}
+              minLength={10}
+              maxLength={1000}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Describe the work or evidence. Use at least 10 characters."
+            />
+          </Label>
         )}
-        <Label>
-          Public update and source details
-          <Textarea
-            value={note}
-            minLength={10}
-            maxLength={1000}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Explain this update and the evidence that supports it."
-          />
-        </Label>
+        {(stage === "resolution_reported" || stage === "reopened") && (
+          <div className="space-y-2">
+            <Label>
+              Later photo evidence
+              <select
+                className="privacy-effect"
+                value={evidenceId}
+                onChange={(e) => setEvidenceId(e.target.value)}
+              >
+                <option value="">Select later photo evidence</option>
+                {evidence.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.observationDate} — {item.description.slice(0, 70)}
+                  </option>
+                ))}
+              </select>
+            </Label>
+            {!evidence.length && (
+              <p className="text-xs">
+                Add later photo evidence before resolution or reopening. Close
+                this dialog and select Add repair or follow-up evidence. Load
+                earlier history if needed.
+              </p>
+            )}
+          </div>
+        )}
+        <details className="space-y-3">
+          <summary className="cursor-pointer text-sm font-semibold">
+            Optional details
+          </summary>
+          <Label>
+            Public follow-up owner
+            <Input
+              value={owner}
+              maxLength={100}
+              onChange={(e) => setOwner(e.target.value)}
+            />
+          </Label>
+          <Label>
+            Complaint reference
+            <Input
+              value={reference}
+              maxLength={120}
+              onChange={(e) => setReference(e.target.value)}
+            />
+          </Label>
+          <Label>
+            Handoff date
+            <Input
+              type="date"
+              value={sentDate}
+              onChange={(e) => setSentDate(e.target.value)}
+            />
+          </Label>
+          <Label>
+            Public source link
+            <Input
+              type="url"
+              value={sourceUrl}
+              maxLength={500}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="https://"
+            />
+          </Label>
+          {stage === "assigned" && (
+            <Label>
+              Assignment note
+              <Textarea
+                value={note}
+                maxLength={1000}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Optional context for this assignment"
+              />
+            </Label>
+          )}
+        </details>
         {error && (
           <p role="alert" className="error-box">
             {error}
