@@ -1,3 +1,4 @@
+import { newId } from "../lib/uuid"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -160,7 +161,7 @@ export function PrivacyEditor({
       const url = URL.createObjectURL(result.blob)
       setPreview(url)
       onApprove(
-        new File([result.blob], crypto.randomUUID() + ".jpg", {
+        new File([result.blob], newId() + ".jpg", {
           type: "image/jpeg",
         })
       )

@@ -102,7 +102,13 @@ app.use("/api/*", async (c, next) => {
     !["GET", "HEAD", "OPTIONS"].includes(c.req.method) &&
     !c.req.path.startsWith("/api/auth/")
   ) {
-    if (c.req.header("origin") !== config.APP_ORIGIN)
+    const origin = c.req.header("origin");
+    const extraOrigin =
+      config.NODE_ENV === "development" ? config.DEV_EXTRA_ORIGIN : undefined;
+    if (
+      origin !== config.APP_ORIGIN &&
+      (!extraOrigin || origin !== extraOrigin)
+    )
       throw new HttpError(403, "Request origin is not allowed.");
   }
   await next();
@@ -423,20 +429,27 @@ app.patch("/api/issues/:id/progress", updateCase);
 app.get("/api/moderation/cases", async (c) => {
   await admin(c);
   c.header("Cache-Control", "no-store");
-  const input = z.object({
-    stage: z.enum(["all", ...caseStages]).default("not_assigned"),
-    cursor: z.string().max(1000).optional(),
-  }).parse(c.req.query());
+  const input = z
+    .object({
+      stage: z.enum(["all", ...caseStages]).default("not_assigned"),
+      cursor: z.string().max(1000).optional(),
+    })
+    .parse(c.req.query());
   let cursor: { createdAt: string; id: string } | undefined;
   if (input.cursor) {
     try {
-      cursor = z.object({ createdAt: z.string().datetime(), id: idSchema }).parse(
-        JSON.parse(Buffer.from(input.cursor, "base64url").toString("utf8")),
-      );
-    } catch { throw new HttpError(400, "Invalid case queue cursor."); }
+      cursor = z
+        .object({ createdAt: z.string().datetime(), id: idSchema })
+        .parse(
+          JSON.parse(Buffer.from(input.cursor, "base64url").toString("utf8")),
+        );
+    } catch {
+      throw new HttpError(400, "Invalid case queue cursor.");
+    }
   }
   // Bind cursor times as text until PostgreSQL casts them, to retain microseconds.
-  const rows = await sql`SELECT id,title,category,status,demo,created_at,case_progress,
+  const rows =
+    await sql`SELECT id,title,category,status,demo,created_at,case_progress,
     to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_time FROM issues
     WHERE visibility='public'
     ${input.stage === "all" ? sql`` : sql`AND COALESCE(case_progress->>'stage','not_assigned')=${input.stage}`}
@@ -446,11 +459,23 @@ app.get("/api/moderation/cases", async (c) => {
   const last = page.at(-1);
   return c.json({
     cases: page.map((row) => ({
-      id: row.id, title: row.title, category: row.category, status: row.status,
-      demo: row.demo, createdAt: iso(row.created_at), caseProgress: row.case_progress ?? null,
+      id: row.id,
+      title: row.title,
+      category: row.category,
+      status: row.status,
+      demo: row.demo,
+      createdAt: iso(row.created_at),
+      caseProgress: row.case_progress ?? null,
     })),
-    nextCursor: rows.length > 25 && last
-      ? Buffer.from(JSON.stringify({ createdAt: last.cursor_time ?? iso(last.created_at), id: last.id })).toString("base64url") : null,
+    nextCursor:
+      rows.length > 25 && last
+        ? Buffer.from(
+            JSON.stringify({
+              createdAt: last.cursor_time ?? iso(last.created_at),
+              id: last.id,
+            }),
+          ).toString("base64url")
+        : null,
   });
 });
 app.get("/api/moderation/flags", async (c) => {
@@ -481,7 +506,10 @@ app.patch("/api/moderation/content/:type/:id", async (c) => {
         : await tx`SELECT issue_id id FROM evidence WHERE id=${id} FOR UPDATE`;
     if (!item) throw new HttpError(404, "Content not found.");
     if (input.status && item.case_progress)
-      throw new HttpError(409, "Use the case progress control for this issue status.");
+      throw new HttpError(
+        409,
+        "Use the case progress control for this issue status.",
+      );
     if (input.status && input.status !== "reported") {
       if (!input.evidenceId)
         throw new HttpError(

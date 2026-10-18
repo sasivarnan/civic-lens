@@ -1,3 +1,4 @@
+import { newId } from "./lib/uuid"
 import {
   createContext,
   lazy,
@@ -536,7 +537,7 @@ function Editor() {
       receipt: "",
       analyzedDescription: "",
       finalApproved: false,
-      key: crypto.randomUUID(),
+      key: newId(),
     } as EditorState,
     on: {
       patch: (state, event: { value: Partial<EditorState> }) => ({
@@ -553,7 +554,7 @@ function Editor() {
     [target, setTarget] = useState<string | undefined>(issueId)
   const patch = (value: Partial<EditorState>) => store.trigger.patch({ value })
   const changed = (value: Partial<EditorState>) => {
-    patch({ ...value, finalApproved: false, key: crypto.randomUUID() })
+    patch({ ...value, finalApproved: false, key: newId() })
   }
   const point = useMemo(
     () =>
@@ -594,7 +595,7 @@ function Editor() {
       gps: null,
       locationConfirmed: false,
       finalApproved: false,
-      key: crypto.randomUUID(),
+      key: newId(),
       ...(current.source === "photo_gps"
         ? { latitude: "", longitude: "", source: "coordinates" as const }
         : {}),
@@ -1261,8 +1262,8 @@ function Detail({
             </figure>
           )}
           <Card>
-            <CardContent className="pt-6">
-              <p className="mt-3 whitespace-pre-wrap">{issue.description}</p>
+            <CardContent>
+              <p className="whitespace-pre-wrap">{issue.description}</p>
             </CardContent>
           </Card>
           {issue.analysis && (

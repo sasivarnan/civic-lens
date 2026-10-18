@@ -125,3 +125,23 @@ it("represents insufficient evidence without forcing a category and rejects cont
   expect(analysisSchema.safeParse(legacy).success).toBe(false);
   expect(isPublishableAnalysis(legacy as typeof analysis)).toBe(false);
 });
+
+it("accepts only the configured extra origin during development", async () => {
+  const { config } = await import("../src/config.js");
+  const original = { mode: config.NODE_ENV, extra: config.DEV_EXTRA_ORIGIN };
+  try {
+    config.DEV_EXTRA_ORIGIN = "http://192.168.1.20:5173";
+    const request = () =>
+      app.request("/api/lan-origin-check", {
+        method: "POST",
+        headers: { origin: config.DEV_EXTRA_ORIGIN! },
+      });
+    config.NODE_ENV = "development";
+    expect((await request()).status).toBe(404);
+    config.NODE_ENV = "production";
+    expect((await request()).status).toBe(403);
+  } finally {
+    config.NODE_ENV = original.mode;
+    config.DEV_EXTRA_ORIGIN = original.extra;
+  }
+});

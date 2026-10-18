@@ -507,3 +507,9 @@ Use a 120% root text size. Use relative units for app text so headings, controls
 Remove repeated section captions, duplicate status badges, and repeated summary counts. Show only AI finding sections that have content. Keep AI disclosure, uncertainty, form labels, privacy approval, and public-location notices. Put repeated publishing help in Before you publish. Keep optional case fields in Optional details.
 
 Validation: all 43 frontend tests, lint, type checks, frontend build, and unused-code checks passed. Browser checks confirmed a 19.2-pixel root size, desktop and 390-pixel home layouts, and report, admin, issue, and case-dialog layouts at 320 pixels. These narrow layouts had no horizontal page overflow. No AI requests or case updates were made during these checks.
+
+## Local network development
+
+The Vite dev server listens on local network interfaces. Open the computer IP address on port 5173 from a device on the same network. API requests use the Vite proxy. Keep APP_ORIGIN at the localhost URL when sign-in emails must open on this computer. Set DEV_EXTRA_ORIGIN to the local network URL to accept phone requests. The extra origin is accepted only in development; production accepts APP_ORIGIN only. Restart the dev servers after an origin change.
+
+Plain HTTP network addresses do not provide phone GPS access. Use the map pin or coordinate fields. The browser uses getRandomValues to create UUIDs when randomUUID is unavailable on HTTP. Photo privacy approval remains required.
