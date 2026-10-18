@@ -44,6 +44,7 @@ import {
   today,
   categories,
   categoryLabels,
+  caseStageLabels,
   isPublishableAnalysis,
   type Issue,
   type Analysis,
@@ -57,8 +58,15 @@ import { Label } from "./components/ui/label"
 import { Badge } from "./components/ui/badge"
 import { PrivacyEditor } from "./components/PrivacyEditor"
 import { Findings } from "./components/Findings"
+import { CaseProgress } from "./components/CaseProgress"
 import { IssueReport } from "./components/IssueReport"
-import { api, sendEmailLink, signOut, loadSession, type Session } from "./lib/api"
+import {
+  api,
+  sendEmailLink,
+  signOut,
+  loadSession,
+  type Session,
+} from "./lib/api"
 const Map = lazy(() => import("./components/Map"))
 const SessionContext = createContext<Session | null>(null)
 const statusLabel = (s: string) =>
@@ -94,7 +102,10 @@ function Root() {
   useEffect(() => {
     void loadSession()
       .then(setSession)
-      .catch((error: Error) => { setSession({}); setAuthError(error.message) })
+      .catch((error: Error) => {
+        setSession({})
+        setAuthError(error.message)
+      })
   }, [])
   return (
     <SessionContext.Provider value={session}>
@@ -142,7 +153,8 @@ function Root() {
       <main id="main">
         {session?.demoMode && (
           <p className="notice" role="status">
-            Hackathon demo. No email sign-in is needed. Reports and locations are public. Use sample evidence.
+            Hackathon demo. No email sign-in is needed. Reports and locations
+            are public. Use sample evidence.
           </p>
         )}
         <ErrorText error={authError} />
@@ -152,7 +164,12 @@ function Root() {
         <span>CivicLens · Evidence for better neighbourhoods.</span>
         <span>
           Community reports. Human review. <Link to="/privacy">Privacy</Link>
-          {session?.demoMode && <> · <Link to="/sign-in">Admin sign-in</Link></>}
+          {session?.demoMode && (
+            <>
+              {" "}
+              · <Link to="/sign-in">Admin sign-in</Link>
+            </>
+          )}
         </span>
       </footer>
     </SessionContext.Provider>
@@ -181,7 +198,9 @@ function IssueCard({ issue }: { issue: Issue }) {
           </div>
         )}
         <Badge className="image-badge" variant="secondary">
-          {statusLabel(issue.status)}
+          {issue.caseProgress
+            ? caseStageLabels[issue.caseProgress.stage]
+            : statusLabel(issue.status)}
         </Badge>
       </div>
       <div className="issue-card-body">
@@ -203,7 +222,7 @@ function IssueCard({ issue }: { issue: Issue }) {
             {issue.latitude.toFixed(3)}, {issue.longitude.toFixed(3)}
           </span>
           <span>
-            {issue.confirmationCount} observed · {issue.supportCount} support
+            {issue.confirmationCount} observed · {issue.supportCount} upvotes
           </span>
         </div>
       </div>
@@ -730,6 +749,21 @@ function Editor() {
                 <span className="number-circle">1</span>Photo and privacy
               </h2>
               <Label htmlFor="photo">Select a still photo</Label>
+              <label className="text-link cursor-pointer">
+                Take photo on phone
+                <input
+                  className="sr-only"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  aria-label="Take photo on phone"
+                  onChange={(e) => void select(e.target.files?.[0])}
+                />
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Use the rear camera on a supported phone, or select a saved
+                photo below.
+              </p>
               <Input
                 id="photo"
                 type="file"
@@ -1213,13 +1247,18 @@ function Detail({
       <div className="detail-heading">
         <p className="eyebrow">
           {categoryLabels[issue.category]}
-          {issue.demo ? " · SEEDED DEMO" : ""}
+          {issue.demo ? " · DEMO" : ""}
         </p>
         <h1 ref={headingRef} tabIndex={-1}>
           {issue.title}
         </h1>
         <div className="flex flex-wrap gap-3">
           <Badge variant="secondary">{statusLabel(issue.status)}</Badge>
+          {issue.caseProgress && (
+            <Badge variant="outline">
+              {caseStageLabels[issue.caseProgress.stage]}
+            </Badge>
+          )}
           <span className="text-sm text-muted-foreground">
             Observed {issue.observationDate} · Submitted{" "}
             {issue.createdAt.slice(0, 10)}
@@ -1228,7 +1267,7 @@ function Detail({
       </div>
       {embedded && (
         <p className="panel-summary">
-          {issue.confirmationCount} observations · {issue.supportCount} support
+          {issue.confirmationCount} observations · {issue.supportCount} upvotes
           · {categoryLabels[issue.category]}
         </p>
       )}
@@ -1329,6 +1368,13 @@ function Detail({
           </section>
         </div>
         <aside className="space-y-5">
+          <CaseProgress
+            key={issue.id + ":" + (issue.caseRevision ?? 0)}
+            issue={issue}
+            canManage={session?.user?.role === "admin" && !session.user.demo}
+            ownerName={session?.user?.name ?? "CivicLens coordinator"}
+            onUpdated={refresh}
+          />
           <Card>
             <CardContent className="space-y-4 pt-6">
               <p className="eyebrow">INCIDENT LOCATION</p>
@@ -1346,12 +1392,12 @@ function Detail({
                   <strong>{issue.confirmationCount}</strong>observations
                 </span>
                 <span>
-                  <strong>{issue.supportCount}</strong>support
+                  <strong>{issue.supportCount}</strong>upvotes
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                A confirmation records a member's observation. Support requests
-                action.
+                A confirmation records a member's observation. An upvote
+                requests action.
               </p>
               {session?.user ? (
                 <div className="no-print space-y-3">
@@ -1371,9 +1417,7 @@ function Detail({
                     ) : (
                       <Plus size={16} />
                     )}{" "}
-                    {issue.reaction?.support
-                      ? "Withdraw support"
-                      : "Support action"}
+                    {issue.reaction?.support ? "Remove my upvote" : "Upvote"}
                   </Button>
                   <Label>
                     When did you observe this issue?

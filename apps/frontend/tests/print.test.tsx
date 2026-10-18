@@ -36,6 +36,16 @@ it("loads all public history before print and includes evidence, location, AI, a
       unknowns: ["Synthetic evidence only."],
       nextEvidence: "Provide real reviewed evidence.",
     },
+    caseProgress: {
+      stage: "assigned",
+      authority: "Demo accessibility team",
+      owner: "Demo coordinator",
+      reference: "DEMO-001",
+      sentDate: "2026-10-18",
+      sourceUrl: "https://example.com/demo",
+      note: "Demo only. No authority was contacted.",
+      updatedAt: "2026-10-18T06:00:00Z",
+    },
     guide: guides.accessibility,
     history: [
       {
@@ -97,6 +107,9 @@ it("loads all public history before print and includes evidence, location, AI, a
     name: "Print / Save as PDF",
   })
   expect(screen.getByText("Latest public evidence")).toBeTruthy()
+  expect(screen.getByRole("heading", { name: "Case progress" })).toBeTruthy()
+  expect(screen.getByText(/Authority: Demo accessibility team/)).toBeTruthy()
+  expect(screen.getByText(/Reference: DEMO-001/)).toBeTruthy()
   expect(screen.getByText("Earlier public evidence")).toBeTruthy()
   expect(screen.getByText("Synthetic evidence only.")).toBeTruthy()
   expect(screen.getByText(/12.971600/)).toBeTruthy()

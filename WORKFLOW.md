@@ -20,6 +20,22 @@ Both effects change the canvas pixels that form the approved JPEG. Blur first re
 
 Validation on 18 October: all 69 automated tests, lint, type checks, build, and unused-code checks passed. Tests cover suggested blur, manual solid covers, effect changes that cancel approval, missing blur support, failed drawing, image bounds, and overlapping regions. A browser-generated approved JPEG removed eye detail from a synthetic face shape. Uncovered pixels had a mean channel difference of 0.44 out of 255 after JPEG encoding. Browser checks also confirmed effect selection and approval reset. This test does not establish anonymity or detection quality for real faces.
 
+## Case follow-up: implemented on 18 October
+
+Keep incident status separate from case progress. Incident status remains Reported, Resolution reported, or Reopened. Case progress has eight stages: Not assigned, Assigned internally, Sent to authority, Acknowledgement reported, Work in progress reported, Resolution reported, Case closed after review, and Reopened.
+
+The admin uses the Case progress card on the issue page. Record the authority or service name, public follow-up owner, source URL, and update note. Check jurisdiction manually. Do not imply that an internal assignment is an authority acknowledgement. Sent, acknowledged, and in-progress updates require a complaint reference and handoff date. No complaint is sent by this application. Label sample handoffs as demo data.
+
+`PATCH /api/issues/:id/progress` requires a real admin session and the configured request origin. The backend validates fields, the allowed stage change, and the current revision. It locks the issue row during the update. Resolution, closure, and reopening require public later photo evidence from that issue. Reopening must select different evidence from the previous case update. The old moderation status route rejects status changes on cases that use this workflow.
+
+Migration `0003_case_progress` adds a JSON progress record and integer revision to `issues`. PostgreSQL stores the current stage, authority, owner, reference, source, handoff date, evidence link, note, and server update time. Each update also creates a public `case_updated` history event. The issue API returns current progress; the history API returns earlier updates. The PDF includes the case details and history. Model findings stay separate.
+
+Upvotes use the existing support record. Each account has one active upvote per issue. Dated observations remain separate. The phone capture control requests the rear camera. The gallery control remains available. Both use the same privacy approval and AI review path. A real-phone camera check is still required.
+
+Validation: all 83 automated tests, lint, type checks, build, and unused-code checks passed. Browser checks confirmed real admin sign-in, a labelled sample assignment, public history, and upvote withdrawal. The public card and expanded admin form fit a 390-pixel viewport without horizontal overflow. Physical camera capture and saved PDF page breaks remain manual checks.
+
+The local case smoke check uses real admin email sign-in, PostgreSQL, and private S3 storage. It passed assignment, handoff, acknowledgement, work progress, resolution, closure, reopening, public history, upvote, access checks, and revision conflict checks. It uses labelled synthetic fixtures without model output, hides its test issue, and makes no authority contact or AI call. Run it with `pnpm --filter @civiclens/backend test:cases` in the local demo environment.
+
 ## Temporary hackathon access
 
 Set `DEMO_MODE=true` on the backend to let visitors use the reporting flow without email sign-in. The default is `false`. Change it to `false` and restart the backend to restore email sign-in for all member actions.

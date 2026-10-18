@@ -148,6 +148,28 @@ Local tests have used real Gemma, PostgreSQL, and private S3 storage. Automated 
 
 Keep model findings separate from reviewed content. Do not use an **AI verified** label. Fixed action guides use checked source links. Gemma does not create government procedures or submit complaints.
 
+## Case follow-up workflow
+
+A coordinator can manage a case from its issue page. Sign in with the local admin account, `admin@civiclens.test`. Open the email link in Mailpit. Demo visitors cannot change case progress.
+
+The stages are Not assigned, Assigned internally, Sent to authority, Acknowledgement reported, Work in progress reported, Resolution reported, Case closed after review, and Reopened. The server checks each stage change.
+
+Record the authority or service, public follow-up owner, source link, and update note. Sent, acknowledged, and work-in-progress stages also require a complaint reference and handoff date. The coordinator must check the responsible agency. CivicLens does not select jurisdiction or send a government complaint.
+
+Resolution, closure, and reopening require public later photo evidence from the same issue. Reopening must use different evidence from the previous case update. Case closure is a coordinator decision; it does not prove official closure. Each update has a server date and a public history entry. A revision check rejects stale updates. The PDF includes case progress and history.
+
+Members can upvote an issue separately from a dated observation. One account has one active upvote per issue. Demo browser identities do not prove unique people.
+
+The report form has a separate Take photo on phone control. It requests the rear camera on supported phones. The gallery control remains available. Both paths use the same privacy review. Camera behaviour still needs a real-phone check.
+
+For a local case workflow check, enable demo mode, start the app and services, then run:
+
+```sh
+pnpm --filter @civiclens/backend test:cases
+```
+
+This check uses real admin email sign-in, PostgreSQL, and private S3 storage. It checks stage changes, evidence links, history, upvotes, access, and stale updates. It creates labelled synthetic fixtures and hides its test issue afterwards. It does not contact an authority or make AI calls. The normal AI smoke test remains separate.
+
 ## EmbeddingGemma status
 
 EmbeddingGemma is not part of the current demo. The code still contains a related-report button, an API route, a model adapter, vector jobs, and pgvector tables. Earlier local tests used this path. That test history does not mean that the current demo uses it.

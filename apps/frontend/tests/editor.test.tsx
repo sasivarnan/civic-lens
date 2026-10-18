@@ -384,3 +384,12 @@ it("uses face blur for detector suggestions while keeping manual solid covers", 
     (screen.getByLabelText("Region 2 effect") as HTMLSelectElement).value
   ).toBe("solid")
 })
+it("keeps phone camera capture separate from gallery selection", async () => {
+  await openEditor()
+  expect(
+    screen.getByLabelText("Take photo on phone").getAttribute("capture")
+  ).toBe("environment")
+  expect(
+    screen.getByLabelText("Select a still photo").hasAttribute("capture")
+  ).toBe(false)
+})

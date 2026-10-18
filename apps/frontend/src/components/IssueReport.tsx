@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import { FileDown, Layers } from "lucide-react"
-import { categoryLabels, type Issue } from "@civiclens/shared"
+import { categoryLabels, caseStageLabels, type Issue } from "@civiclens/shared"
 import { Button } from "./ui/button"
 import { Findings } from "./Findings"
 
@@ -77,7 +77,7 @@ export function IssueReport({ issue }: { issue: Issue }) {
         <div className="report-title">
           <p className="report-kicker">
             {categoryLabels[issue.category]}
-            {issue.demo ? " / SEEDED DEMO" : ""}
+            {issue.demo ? " / DEMO" : ""}
           </p>
           <h1 tabIndex={-1}>{issue.title}</h1>
           <p className="report-id">Report ID: {issue.id}</p>
@@ -110,12 +110,36 @@ export function IssueReport({ issue }: { issue: Issue }) {
             </dd>
           </div>
         </dl>
+        {issue.caseProgress && (
+          <section className="report-section">
+            <h2>Case progress</h2>
+            <p>{caseStageLabels[issue.caseProgress.stage]}</p>
+            <p>
+              Authority: {issue.caseProgress.authority || "Not assigned"}.
+              Follow-up owner: {issue.caseProgress.owner || "Not assigned"}.
+            </p>
+            <p>
+              Reference: {issue.caseProgress.reference || "Not recorded"}.
+              Handoff date: {issue.caseProgress.sentDate || "Not recorded"}.
+            </p>
+            <p>{issue.caseProgress.note}</p>
+            <p className="report-note">
+              Updated: {issue.caseProgress.updatedAt}. Manual community record.
+              This does not prove official acceptance or closure.
+            </p>
+            {issue.caseProgress.sourceUrl && (
+              <p className="report-note">
+                Source: {issue.caseProgress.sourceUrl}
+              </p>
+            )}
+          </section>
+        )}
         <section className="report-section">
           <h2>Resident report</h2>
           <p className="report-description">{issue.description}</p>
           <p className="report-note">
             {issue.confirmationCount} community observations ·{" "}
-            {issue.supportCount} support. Observations and support are separate
+            {issue.supportCount} upvotes. Observations and upvotes are separate
             records.
           </p>
         </section>
