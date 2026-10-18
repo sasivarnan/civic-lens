@@ -2,9 +2,21 @@
 
 A community evidence platform for Bengaluru. Report pedestrian safety issues, accessibility barriers, and potholes. Review privacy edits and Gemma findings before publication.
 
-## Product theme: invisible utility
+## Hackathon track: Gemma 4 multimodal intelligence
+
+**Primary problem statement: Track 1 — Best Use of Gemma 4, G3. Multimodal AI Intelligence.**
+
+CivicLens combines a photo with the resident's text description. Gemma 4 compares these inputs to identify visible conditions, separate observations from claims, identify conflicts, and explain uncertainty. The resident reviews the findings and approves the final report before publication.
+
+The demo must show reasoning across both inputs. For example, a resident can describe a path as completely blocked while the photo shows only part of the path. Gemma should explain what the photo supports and what it cannot establish. This is an example to demonstrate; it is not a claim that every model response is correct.
+
+Image and text are the input formats for this MVP. Audio is not required by the supplied G3 statement. EmbeddingGemma supports related-report retrieval after location filtering. Gemma 4's comparison of the photo and description is the core G3 use case.
+
+## Product principle: invisible utility
 
 **The best use of artificial intelligence is invisible utility.**
+
+This principle guides the interface. It does not replace the G3 problem statement.
 
 CivicLens puts useful help inside one civic reporting task. Residents prepare a safe photo, review the evidence, find related reports, and share a report with next steps. They do not need a separate chatbot or AI tool.
 
@@ -43,6 +55,8 @@ pnpm dev
 Open <http://localhost:5173>. The backend runs on port 3000. The local test mailbox is at <http://localhost:8025>. Setup creates an ignored `.env` with generated local secrets and downloads the face model and WASM files. It does not replace an existing `.env`.
 
 Sign in with `reporter@civiclens.test` or `community@civiclens.test`. Open the email in the local mailbox and follow its verification link. The seed command also creates an Admin account for local moderation testing. There is no password or user-switch bypass. All demo account addresses and roles are in `apps/backend/src/seed.ts`.
+
+For temporary hackathon access, set `DEMO_MODE=true` in the backend environment and restart the backend. Visitors receive separate 24-hour demo sessions without email sign-in. New demo issues have a demo label. Privacy checks, evidence review, and final approval still apply. Admin actions require a real email session with the admin role; use `/sign-in`. The default is `false`. Set it back to `false` and restart to stop demo access. This does not delete stored demo reports or images. Use a separate demo database.
 
 Seeded issues are labelled examples, with no fabricated photos or AI results. New submissions use the real database, storage, and configured model services. The demo seed refuses to run in production.
 
