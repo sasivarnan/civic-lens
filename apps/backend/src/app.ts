@@ -8,6 +8,7 @@ import {
   observationDateSchema,
   locationSchema,
   categories,
+  caseStages,
   statuses,
   guides,
   isPublishableAnalysis,
@@ -419,6 +420,39 @@ app.post("/api/issues/:id/flags", async (c) => {
   return c.json({ ok: true }, 201);
 });
 app.patch("/api/issues/:id/progress", updateCase);
+app.get("/api/moderation/cases", async (c) => {
+  await admin(c);
+  c.header("Cache-Control", "no-store");
+  const input = z.object({
+    stage: z.enum(["all", ...caseStages]).default("not_assigned"),
+    cursor: z.string().max(1000).optional(),
+  }).parse(c.req.query());
+  let cursor: { createdAt: string; id: string } | undefined;
+  if (input.cursor) {
+    try {
+      cursor = z.object({ createdAt: z.string().datetime(), id: idSchema }).parse(
+        JSON.parse(Buffer.from(input.cursor, "base64url").toString("utf8")),
+      );
+    } catch { throw new HttpError(400, "Invalid case queue cursor."); }
+  }
+  // Bind cursor times as text until PostgreSQL casts them, to retain microseconds.
+  const rows = await sql`SELECT id,title,category,status,demo,created_at,case_progress,
+    to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_time FROM issues
+    WHERE visibility='public'
+    ${input.stage === "all" ? sql`` : sql`AND COALESCE(case_progress->>'stage','not_assigned')=${input.stage}`}
+    ${cursor ? sql`AND (created_at,id)<(${cursor.createdAt}::text::timestamptz,${cursor.id}::uuid)` : sql``}
+    ORDER BY created_at DESC,id DESC LIMIT 26`;
+  const page = rows.slice(0, 25);
+  const last = page.at(-1);
+  return c.json({
+    cases: page.map((row) => ({
+      id: row.id, title: row.title, category: row.category, status: row.status,
+      demo: row.demo, createdAt: iso(row.created_at), caseProgress: row.case_progress ?? null,
+    })),
+    nextCursor: rows.length > 25 && last
+      ? Buffer.from(JSON.stringify({ createdAt: last.cursor_time ?? iso(last.created_at), id: last.id })).toString("base64url") : null,
+  });
+});
 app.get("/api/moderation/flags", async (c) => {
   await admin(c);
   const flags =

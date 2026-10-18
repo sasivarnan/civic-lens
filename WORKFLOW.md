@@ -36,6 +36,18 @@ Validation: all 83 automated tests, lint, type checks, build, and unused-code ch
 
 The local case smoke check uses real admin email sign-in, PostgreSQL, and private S3 storage. It passed assignment, handoff, acknowledgement, work progress, resolution, closure, reopening, public history, upvote, access checks, and revision conflict checks. It uses labelled synthetic fixtures without model output, hides its test issue, and makes no authority contact or AI call. Run it with `pnpm --filter @civiclens/backend test:cases` in the local demo environment.
 
+## Admin workspace: implemented on 18 October
+
+Open `/moderation` with a real admin email session. Cases is the default section. It starts with Not assigned. Each row shows the issue, case stage, authority, public follow-up owner, last case update, and next action. Open case leads to the full issue page and moves focus to Case progress. Keep case editing on that page.
+
+The section and stage are URL parameters. Refresh and browser Back retain those choices. The queue has stage filters, refresh, and Load more cases. It lists public cases only. Content review is a separate section for flagged content. It keeps hide and restore controls with a required reason. Loading, empty results, and errors use separate messages.
+
+`GET /api/moderation/cases` requires a real admin session and returns no private account fields. It accepts a stage and an optional page cursor. Pages contain at most 25 cases, ordered by creation time and issue ID. The cursor retains full database timestamp precision. Responses use no-store caching. No database migration is needed for this workspace.
+
+Validation: all 94 automated tests, lint, type checks, build, and unused-code checks passed. Browser checks confirmed stage filters, refresh, direct links with focus on case controls, Back navigation, and separate content review. Content review fit a 390-pixel viewport. The case queue fit a 320-pixel viewport. Neither check had horizontal overflow.
+
+The local case smoke check passed stage filtering, multiple pages with equal timestamps, no duplicate or missing fixture cases, hidden-case exclusion, and member access denial. Synthetic fixtures are hidden after the check. Automated tests also cover invalid queries, safe fields, loading, error and empty states, refresh, direct case links, and demo-user UI access.
+
 ## Temporary hackathon access
 
 Set `DEMO_MODE=true` on the backend to let visitors use the reporting flow without email sign-in. The default is `false`. Change it to `false` and restart the backend to restore email sign-in for all member actions.
@@ -291,7 +303,7 @@ All pages below are implemented locally. Reuse one browser editor for new issues
 | `/sign-in`                      | Sign in and return safely to the requested page                                                            |
 | `/sign-up`                      | Create an account; handle verification before member actions                                               |
 | `/privacy`                      | Explain local edits, public location, AI processing, retention, removal, and limitations                   |
-| `/moderation`                   | Admin-only abuse queue and controls to hide unsafe issue or evidence content                               |
+| `/moderation`                   | Admin case queue, stage filters, case links, and separate flagged-content review                               |
 
 Account verification, recovery, and callback routes depend on the account provider. Protect admin routes and APIs on the backend; hiding navigation is not access control. No draft page, chatbot, general comment page, or separate guide page.
 
@@ -311,7 +323,9 @@ All routes use the `/api` prefix. Submission and AI routes require member access
 | `PUT /issues/:id/reactions`           | Set current member's support flag and optional dated confirmation independently; permit withdrawal                               |
 | `POST /issues/:id/flags`              | Report unsafe content; optionally identify an evidence item                                                                      |
 | Auth.js `/auth/*` routes              | Sign-in, callbacks, session, sign-out, and anti-forgery controls; expose only safe member fields                                 |
-| `GET /moderation/flags`               | Admin-only, paged abuse queue                                                                                                    |
+| `GET /moderation/cases`              | Admin-only public case queue; stage filter and page cursor                                                                         |
+| `PATCH /issues/:id/progress`          | Admin-only case update; check stage, evidence, revision, and public source details                                                   |
+| `GET /moderation/flags`               | Admin-only flagged-content list; at most 100 records                                                                                                    |
 | `PATCH /moderation/content/:type/:id` | Admin-only visibility changes; issue status changes follow the selected policy and require an audit event                        |
 | `GET /health`                         | Deployment health without secrets                                                                                                |
 

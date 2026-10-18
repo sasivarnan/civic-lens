@@ -97,6 +97,7 @@ assert.equal(
 );
 const id = randomUUID();
 const evidenceIds = [randomUUID(), randomUUID()];
+const queueFixtures: string[] = [];
 try {
   // Local database fixtures have no model output and make no AI-review claim.
   await sql`INSERT INTO issues(id,author_id,title,description,category,latitude,longitude,point,location_source,observation_date,demo) VALUES(${id},${session.user.id},'Demo: case workflow check','Synthetic fixture for case workflow checks. No real incident or AI review is claimed.','pothole',12.97,77.59,ST_SetSRID(ST_MakePoint(77.59,12.97),4326)::geography,'coordinates',CURRENT_DATE,true)`;
@@ -182,7 +183,58 @@ try {
   console.log(
     "PASS assignment, handoff, acknowledgement, work progress, evidence-linked resolution, closure, reopening, public history, upvote, access checks, and stale-update rejection",
   );
+  assert.equal((await member.call("/moderation/cases")).status, 401);
+  assert.equal(
+    (await admin.call("/moderation/cases?stage=unsupported")).status,
+    400,
+  );
+  const queueProgress = {
+    ...payload,
+    stage: "acknowledged",
+    updatedAt: new Date().toISOString(),
+  };
+  await sql.begin(async (tx) => {
+    for (let n = 0; n < 27; n++) {
+      const fixtureId = randomUUID();
+      queueFixtures.push(fixtureId);
+      await tx`INSERT INTO issues(id,author_id,title,description,category,latitude,longitude,point,location_source,observation_date,demo,visibility,case_progress,created_at)
+        VALUES(${fixtureId},${session.user.id},'Demo: queue pagination fixture','Synthetic queue fixture. No real incident or authority contact is claimed.','pothole',12.97,77.59,ST_SetSRID(ST_MakePoint(77.59,12.97),4326)::geography,'coordinates',CURRENT_DATE,true,${n === 26 ? "hidden" : "public"},${tx.json(queueProgress)},'2026-10-18T00:00:00.123456Z')`;
+    }
+  });
+  let nextCursor: string | null = null;
+  const listed = new Set<string>();
+  let pages = 0;
+  do {
+    const path =
+      "/moderation/cases?stage=acknowledged" +
+      (nextCursor ? "&cursor=" + encodeURIComponent(nextCursor) : "");
+    const response = await admin.call(path);
+    assert.equal(response.status, 200);
+    const page = (await response.json()) as any;
+    for (const item of page.cases) {
+      assert(!listed.has(item.id), "Duplicate case across pages.");
+      assert.equal(item.caseProgress.stage, "acknowledged");
+      listed.add(item.id);
+    }
+    nextCursor = page.nextCursor;
+    pages++;
+    assert(pages < 20, "Case queue pagination did not finish.");
+  } while (nextCursor);
+  for (const fixtureId of queueFixtures.slice(0, 26))
+    assert(
+      listed.has(fixtureId),
+      "Queue skipped a case with the same creation time.",
+    );
+  assert(
+    !listed.has(queueFixtures[26]!),
+    "Hidden case entered the public case queue.",
+  );
+  console.log(
+    "PASS admin queue filters, multi-page results with equal timestamps, hidden-case exclusion, and member access denial",
+  );
 } finally {
+  if (queueFixtures.length)
+    await sql`UPDATE issues SET visibility='hidden' WHERE id=ANY(${queueFixtures}::uuid[])`;
   const response = await admin.call(`/moderation/content/issue/${id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },

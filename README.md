@@ -150,7 +150,11 @@ Keep model findings separate from reviewed content. Do not use an **AI verified*
 
 ## Case follow-up workflow
 
-A coordinator can manage a case from its issue page. Sign in with the local admin account, `admin@civiclens.test`. Open the email link in Mailpit. Demo visitors cannot change case progress.
+Sign in with the local admin account, `admin@civiclens.test`. Open the email link in Mailpit. Select Admin in the navigation, or open `/moderation`. Demo visitors cannot read the admin queue or change case progress.
+
+The Admin workspace opens the Cases section with the Not assigned filter. Each case shows its stage, authority, follow-up owner, last update, and next action. Filter by stage, refresh the queue, or load more cases. Open case leads to the case controls on the full issue page. The section and stage stay in the URL for refresh and browser Back. The queue lists public cases only.
+
+Content review is a separate section for flagged content. Hide or restore content with a reason. Visibility changes do not establish resolution. Loading, empty results, and failed requests have separate messages.
 
 The stages are Not assigned, Assigned internally, Sent to authority, Acknowledgement reported, Work in progress reported, Resolution reported, Case closed after review, and Reopened. The server checks each stage change.
 
@@ -168,7 +172,7 @@ For a local case workflow check, enable demo mode, start the app and services, t
 pnpm --filter @civiclens/backend test:cases
 ```
 
-This check uses real admin email sign-in, PostgreSQL, and private S3 storage. It checks stage changes, evidence links, history, upvotes, access, and stale updates. It creates labelled synthetic fixtures and hides its test issue afterwards. It does not contact an authority or make AI calls. The normal AI smoke test remains separate.
+This check uses real admin email sign-in, PostgreSQL, and private S3 storage. It checks stage changes, evidence links, history, upvotes, access, stale updates, queue filters, and pagination. The queue test uses equal creation times to check that no case is skipped. It creates labelled synthetic fixtures and hides its test issue afterwards. It does not contact an authority or make AI calls. The normal AI smoke test remains separate.
 
 ## EmbeddingGemma status
 

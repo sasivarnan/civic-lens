@@ -81,7 +81,7 @@ export const reportSchema = z.object({
   finalApproved: z.literal(true),
 });
 export type ReportInput = z.infer<typeof reportSchema>;
-const caseStages = [
+export const caseStages = [
   "not_assigned",
   "assigned",
   "sent",

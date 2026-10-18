@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   caseStageLabels,
@@ -25,6 +25,15 @@ export function CaseProgress({
   ownerName: string
   onUpdated: () => Promise<void>
 }) {
+  const panel = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (location.hash !== "#case-progress") return
+    const frame = requestAnimationFrame(() => {
+      panel.current?.scrollIntoView({ block: "start" })
+      panel.current?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [])
   const progress = issue.caseProgress
   const previous = progress?.stage ?? "not_assigned"
   const [stage, setStage] = useState<CaseStage>(progress?.stage ?? "assigned")
@@ -74,7 +83,12 @@ export function CaseProgress({
     }
   }
   return (
-    <Card>
+    <Card
+      id="case-progress"
+      ref={panel}
+      tabIndex={-1}
+      aria-label="Case progress"
+    >
       <CardContent className="space-y-4 pt-6">
         <p className="eyebrow">CASE PROGRESS</p>
         <h2 className="text-lg">{caseStageLabels[previous]}</h2>

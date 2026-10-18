@@ -46,6 +46,7 @@ import {
   categoryLabels,
   caseStageLabels,
   isPublishableAnalysis,
+  type CaseStage,
   type Issue,
   type Analysis,
   type ReportInput,
@@ -58,6 +59,7 @@ import { Label } from "./components/ui/label"
 import { Badge } from "./components/ui/badge"
 import { PrivacyEditor } from "./components/PrivacyEditor"
 import { Findings } from "./components/Findings"
+import { AdminWorkspace } from "./components/AdminWorkspace"
 import { CaseProgress } from "./components/CaseProgress"
 import { IssueReport } from "./components/IssueReport"
 import {
@@ -124,6 +126,9 @@ function Root() {
             Explore
           </Link>
           <Link to="/privacy">Privacy</Link>
+          {session?.user?.role === "admin" && !session.user.demo && (
+            <Link to="/moderation">Admin</Link>
+          )}
           <Link to="/report/new" className="nav-report">
             <Plus size={16} />
             Report an issue
@@ -1681,25 +1686,86 @@ type ModerationFlag = {
   visibility: "public" | "hidden"
 }
 function Moderation() {
-  const [flags, setFlags] = useState<ModerationFlag[]>([]),
-    [error, setError] = useState(""),
-    [reason, setReason] = useState(""),
-    [notice, setNotice] = useState("")
+  const session = useContext(SessionContext)
+  if (session === null) return <Loading />
+  if (session.user?.role !== "admin" || session.user.demo)
+    return (
+      <div className="prose-page">
+        <h1>Admin access is required</h1>
+        <p>Use a real admin email session to manage cases.</p>
+        <Link to="/sign-in">Sign in as admin</Link>
+      </div>
+    )
+  return <AdminWorkspace contentReview={<ContentReview />} />
+}
+function ContentReview() {
+  const [flags, setFlags] = useState<ModerationFlag[]>([])
+  const [error, setError] = useState("")
+  const [reason, setReason] = useState("")
+  const [notice, setNotice] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
   const load = () =>
-    api<{ flags: ModerationFlag[] }>("/moderation/flags").then((r) =>
-      setFlags(r.flags)
+    api<{ flags: ModerationFlag[] }>("/moderation/flags").then((result) =>
+      setFlags(result.flags)
     )
   useEffect(() => {
-    void load().catch((e) => setError(e.message))
+    let active = true
+    void api<{ flags: ModerationFlag[] }>("/moderation/flags")
+      .then((result) => {
+        if (active) setFlags(result.flags)
+      })
+      .catch((error: Error) => {
+        if (active) setError(error.message)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
   }, [])
+  async function changeVisibility(
+    flag: ModerationFlag,
+    visibility: "public" | "hidden"
+  ) {
+    setBusy(true)
+    setError("")
+    setNotice("")
+    try {
+      await api(
+        "/moderation/content/" +
+          (flag.evidence_id ? "evidence" : "issue") +
+          "/" +
+          (flag.evidence_id ?? flag.issue_id),
+        {
+          method: "PATCH",
+          body: JSON.stringify({ visibility, reason }),
+        }
+      )
+      await load()
+      setReason("")
+      setNotice(
+        visibility === "hidden" ? "Content hidden." : "Content restored."
+      )
+    } catch (error) {
+      setError((error as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
-    <div className="section">
-      <div className="page-heading">
-        <p className="eyebrow">ADMIN USERS ONLY</p>
-        <h1>Content review</h1>
+    <section
+      className="space-y-4"
+      aria-label="Flagged content"
+      aria-busy={loading}
+    >
+      <div>
+        <h2>Content review</h2>
         <p>Visibility changes do not establish issue resolution.</p>
       </div>
       <ErrorText error={error} />
+      {loading && <p role="status">Loading flagged content…</p>}
       <Label>
         Reason for your next action
         <Textarea
@@ -1708,59 +1774,27 @@ function Moderation() {
           maxLength={1000}
         />
       </Label>
-      <div className="mt-5 space-y-3">
-        {flags.map((f) => (
-          <Card key={f.id}>
+      <div className="space-y-3">
+        {flags.map((flag) => (
+          <Card key={flag.id}>
             <CardContent className="space-y-3 pt-5">
-              <h2>{f.title}</h2>
-              <p>{f.reason}</p>
-              <p className="text-sm text-muted-foreground">
-                Current issue visibility: {f.visibility}
+              <h3>{flag.title}</h3>
+              <p>{flag.reason}</p>
+              <p className="text-sm">
+                Current issue visibility: {flag.visibility}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="destructive"
-                  disabled={reason.trim().length < 10}
-                  onClick={() =>
-                    void api(
-                      "/moderation/content/" +
-                        (f.evidence_id ? "evidence" : "issue") +
-                        "/" +
-                        (f.evidence_id ?? f.issue_id),
-                      {
-                        method: "PATCH",
-                        body: JSON.stringify({ visibility: "hidden", reason }),
-                      }
-                    )
-                      .then(() => {
-                        setNotice("Content hidden.")
-                        return load()
-                      })
-                      .catch((e) => setError(e.message))
-                  }
+                  disabled={busy || reason.trim().length < 10}
+                  onClick={() => void changeVisibility(flag, "hidden")}
                 >
                   Hide flagged content
                 </Button>
                 <Button
                   variant="outline"
-                  disabled={reason.trim().length < 10}
-                  onClick={() =>
-                    void api(
-                      "/moderation/content/" +
-                        (f.evidence_id ? "evidence" : "issue") +
-                        "/" +
-                        (f.evidence_id ?? f.issue_id),
-                      {
-                        method: "PATCH",
-                        body: JSON.stringify({ visibility: "public", reason }),
-                      }
-                    )
-                      .then(() => {
-                        setNotice("Content restored.")
-                        return load()
-                      })
-                      .catch((e) => setError(e.message))
-                  }
+                  disabled={busy || reason.trim().length < 10}
+                  onClick={() => void changeVisibility(flag, "public")}
                 >
                   Restore content
                 </Button>
@@ -1769,11 +1803,11 @@ function Moderation() {
           </Card>
         ))}
       </div>
-      {!flags.length && !error && (
-        <p className="empty-state">No reports are waiting in the queue.</p>
+      {!loading && !flags.length && !error && (
+        <p className="empty-state">No flagged content is waiting for review.</p>
       )}
       <p role="status">{notice}</p>
-    </div>
+    </section>
   )
 }
 function IssuesLayout() {
@@ -1945,6 +1979,17 @@ const routes = [
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/moderation",
+    validateSearch: (
+      search: Record<string, unknown>
+    ): { section: "cases" | "content"; stage: CaseStage | "all" } => ({
+      section: search.section === "content" ? "content" : "cases",
+      stage:
+        search.stage === "all" ||
+        (typeof search.stage === "string" &&
+          Object.hasOwn(caseStageLabels, search.stage))
+          ? (search.stage as CaseStage | "all")
+          : "not_assigned",
+    }),
     component: Moderation,
   }),
 ]
