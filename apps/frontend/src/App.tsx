@@ -109,6 +109,7 @@ function Root() {
         setAuthError(error.message)
       })
   }, [])
+  const isAdmin = session?.user?.role === "admin" && !session.user.demo
   return (
     <SessionContext.Provider value={session}>
       <a className="skip-link" href="#main">
@@ -126,8 +127,16 @@ function Root() {
             Explore
           </Link>
           <Link to="/privacy">Privacy</Link>
-          {session?.user?.role === "admin" && !session.user.demo && (
-            <Link to="/moderation">Admin</Link>
+          {isAdmin && (
+            <Link
+              to="/moderation"
+              aria-label="Admin workspace: signed in as admin"
+            >
+              <Badge variant="secondary">
+                <ShieldCheck size={14} />
+                Admin session
+              </Badge>
+            </Link>
           )}
           <Link to="/report/new" className="nav-report">
             <Plus size={16} />
@@ -156,7 +165,7 @@ function Root() {
         </nav>
       </header>
       <main id="main">
-        {session?.demoMode && (
+        {session?.demoMode && !isAdmin && (
           <p className="notice" role="status">
             Hackathon demo. No email sign-in is needed. Reports and locations
             are public. Use sample evidence.

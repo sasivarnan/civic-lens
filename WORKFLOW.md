@@ -38,7 +38,7 @@ The local case smoke check uses real admin email sign-in, PostgreSQL, and privat
 
 ## Admin workspace: implemented on 18 October
 
-Open `/moderation` with a real admin email session. Cases is the default section. It starts with Not assigned. Each row shows the issue, case stage, authority, public follow-up owner, last case update, and next action. Open case leads to the full issue page and moves focus to Case progress. Keep case editing on that page.
+Open `/moderation` with a real admin email session. The header shows an Admin session badge that links to the workspace. Hide the hackathon demo banner for real admin sessions. Demo visitors keep the banner. Cases is the default section. It starts with Not assigned. Each row shows the issue, case stage, authority, public follow-up owner, last case update, and next action. Open case leads to the full issue page and moves focus to Case progress. Keep case editing on that page.
 
 The section and stage are URL parameters. Refresh and browser Back retain those choices. The queue has stage filters, refresh, and Load more cases. It lists public cases only. Content review is a separate section for flagged content. It keeps hide and restore controls with a required reason. Loading, empty results, and errors use separate messages.
 
