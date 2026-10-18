@@ -3,7 +3,7 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { createPrivacyApproval, StalePhotoError } from "../lib/privacy"
-export type Cover = { x: number; y: number; w: number; h: number }
+import { drawPrivacyImage, type Cover } from "../lib/privacy-image"
 export function PrivacyEditor({
   file,
   onEdit,
@@ -59,14 +59,7 @@ export function PrivacyEditor({
     const c = canvas.current,
       b = bitmap.current
     if (!c || !b || !ready) return
-    const scale = Math.min(1, 1600 / Math.max(b.width, b.height))
-    c.width = Math.round(b.width * scale)
-    c.height = Math.round(b.height * scale)
-    const ctx = c.getContext("2d")!
-    ctx.drawImage(b, 0, 0, c.width, c.height)
-    ctx.fillStyle = "#111111"
-    for (const r of covers)
-      ctx.fillRect(r.x * c.width, r.y * c.height, r.w * c.width, r.h * c.height)
+    drawPrivacyImage(c, b, covers)
   }, [covers, ready])
   useEffect(
     () => () => {
@@ -82,6 +75,7 @@ export function PrivacyEditor({
   }
   function edit(next: Cover[]) {
     invalidate()
+    setMessage("Privacy edits changed. Check the whole image again.")
     setCovers(next)
   }
   async function suggest() {
@@ -109,10 +103,11 @@ export function PrivacyEditor({
         const b = bitmap.current
         if (!alive.current || b !== source || !approval.isCurrent(version))
           return
-        const suggested = detector.detect(b).detections.flatMap((d) =>
+        const suggested: Cover[] = detector.detect(b).detections.flatMap((d) =>
           d.boundingBox
             ? [
                 {
+                  effect: "blur" as const,
                   x: Math.max(0, d.boundingBox.originX / b.width - 0.025),
                   y: Math.max(0, d.boundingBox.originY / b.height - 0.025),
                   w: Math.min(1, d.boundingBox.width / b.width + 0.05),
@@ -124,7 +119,7 @@ export function PrivacyEditor({
         edit([...covers, ...suggested])
         setMessage(
           suggested.length
-            ? "Suggested covers added. Check every cover."
+            ? "Suggested face blurs added. Check every region."
             : "No faces detected. Check the entire image manually."
         )
       } finally {
@@ -189,8 +184,9 @@ export function PrivacyEditor({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        The original stays on this device. Draw solid covers, or use the
-        coordinate controls below.
+        The original stays on this device. Face suggestions use blur. Draw a
+        solid cover for plates and text, or change a region to Face blur below.
+        If blur is not available, a solid cover is used.
       </p>
       <canvas
         ref={canvas}
@@ -212,6 +208,7 @@ export function PrivacyEditor({
             edit([
               ...covers,
               {
+                effect: "solid",
                 x: Math.min(start.x, end.x),
                 y: Math.min(start.y, end.y),
                 w: Math.abs(end.x - start.x),
@@ -234,7 +231,10 @@ export function PrivacyEditor({
           variant="outline"
           disabled={!ready}
           onClick={() =>
-            edit([...covers, { x: 0.35, y: 0.35, w: 0.2, h: 0.2 }])
+            edit([
+              ...covers,
+              { x: 0.35, y: 0.35, w: 0.2, h: 0.2, effect: "solid" },
+            ])
           }
         >
           Add manual cover
@@ -242,7 +242,30 @@ export function PrivacyEditor({
       </div>
       {covers.map((r, i) => (
         <fieldset className="cover-controls" key={i}>
-          <legend>Cover {i + 1}</legend>
+          <legend>Region {i + 1}</legend>
+          <Label>
+            Effect
+            <select
+              aria-label={`Region ${i + 1} effect`}
+              className="privacy-effect"
+              value={r.effect}
+              onChange={(e) =>
+                edit(
+                  covers.map((region, j) =>
+                    j === i
+                      ? {
+                          ...region,
+                          effect: e.target.value === "blur" ? "blur" : "solid",
+                        }
+                      : region
+                  )
+                )
+              }
+            >
+              <option value="blur">Face blur</option>
+              <option value="solid">Solid cover</option>
+            </select>
+          </Label>
           {(["x", "y", "w", "h"] as const).map((k) => (
             <Label key={k}>
               {{ x: "Left", y: "Top", w: "Width", h: "Height" }[k]} %
@@ -271,6 +294,10 @@ export function PrivacyEditor({
           </Button>
         </fieldset>
       ))}
+      <p className="text-sm text-muted-foreground">
+        Blur can leave identifying details visible. Use a solid cover if needed.
+        Check the exact approved copy before you continue.
+      </p>
       <p role="status" className="text-sm">
         {message}
       </p>

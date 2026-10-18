@@ -1589,7 +1589,7 @@ function Privacy() {
       {[
         [
           "Before upload",
-          "Your original photo stays on your device. Photo GPS is read locally when available. Face suggestions and manual solid covers help you prepare a new image. Detection can miss faces and other private details. Review the exact exported copy.",
+          "Your original photo stays on your device. Photo GPS is read locally when available. Face suggestions use blur. Manual solid covers are available for plates, text, and other private details. Blur can leave identifying details visible, and detection can miss faces. Review the exact exported copy.",
         ],
         [
           "What becomes public",

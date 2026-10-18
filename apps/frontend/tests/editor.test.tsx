@@ -13,6 +13,21 @@ vi.mock("exifr", () => ({
     ),
   },
 }))
+vi.mock("@mediapipe/tasks-vision", () => ({
+  FilesetResolver: { forVisionTasks: async () => ({}) },
+  FaceDetector: {
+    createFromOptions: async () => ({
+      detect: () => ({
+        detections: [
+          {
+            boundingBox: { originX: 100, originY: 100, width: 80, height: 80 },
+          },
+        ],
+      }),
+      close: vi.fn(),
+    }),
+  },
+}))
 const NativeURL = URL
 const photo = (name: string, size = 20) =>
   new File([new Uint8Array(size)], name, { type: "image/jpeg" })
@@ -317,4 +332,55 @@ it("keeps the approved photo and description after a failed AI request", async (
     ).disabled
   ).toBe(false)
   expect(screen.queryByRole("button", { name: "Publish issue" })).toBeNull()
+})
+it("withdraws image approval when a region changes from solid cover to face blur", async () => {
+  await openEditor()
+  await choose(photo("no-gps.jpg"))
+  const add = await screen.findByRole("button", { name: "Add manual cover" })
+  await waitFor(() => expect((add as HTMLButtonElement).disabled).toBe(false))
+  fireEvent.click(add)
+  expect(
+    (screen.getByLabelText("Region 1 effect") as HTMLSelectElement).value
+  ).toBe("solid")
+  await approve()
+  fireEvent.change(screen.getByLabelText("Region 1 effect"), {
+    target: { value: "blur" },
+  })
+  expect(
+    screen.queryByRole("img", { name: "Exact privacy-edited upload copy" })
+  ).toBeNull()
+  expect(
+    (
+      screen.getByRole("checkbox", {
+        name: /I checked the whole image/,
+      }) as HTMLInputElement
+    ).checked
+  ).toBe(false)
+  expect(
+    (
+      screen.getByRole("button", {
+        name: "Create approved upload image",
+      }) as HTMLButtonElement
+    ).disabled
+  ).toBe(true)
+})
+
+it("uses face blur for detector suggestions while keeping manual solid covers", async () => {
+  await openEditor()
+  await choose(photo("no-gps.jpg"))
+  const suggest = await screen.findByRole("button", {
+    name: "Suggest face covers",
+  })
+  await waitFor(() =>
+    expect((suggest as HTMLButtonElement).disabled).toBe(false)
+  )
+  fireEvent.click(suggest)
+  await screen.findByText("Suggested face blurs added. Check every region.")
+  expect(
+    (screen.getByLabelText("Region 1 effect") as HTMLSelectElement).value
+  ).toBe("blur")
+  fireEvent.click(screen.getByRole("button", { name: "Add manual cover" }))
+  expect(
+    (screen.getByLabelText("Region 2 effect") as HTMLSelectElement).value
+  ).toBe("solid")
 })

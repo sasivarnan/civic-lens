@@ -76,7 +76,7 @@ Garage is local S3-compatible development storage. Its port is bound to loopback
 
 ## Privacy and reliability
 
-Original photos, GPS parsing, face suggestions, and solid covers stay in the browser. The user approves a fresh JPEG before AI processing. File processing removes source metadata. Manual covers remain available if face suggestions fail. Detection does not certify complete privacy.
+Original photos, GPS parsing, face suggestions, blur, and solid covers stay in the browser. Face suggestions use strong blur. Manual regions start as solid covers; each region has an effect selector. The blur is part of the exported image pixels, not a display filter. Unsupported blur uses a solid cover. Blur can leave identifying details visible; use solid covers when needed. The user approves a fresh JPEG before AI processing. File processing removes source metadata. Manual covers remain available if face suggestions fail. Detection does not certify complete privacy.
 
 There are no server drafts. A refresh or closed tab can lose unfinished work. Insufficient evidence has no category and cannot be published. Replace the image and run review again. Earlier stored AI reviews have no recorded evidence assessment. For sufficient civic context, the analysis endpoint returns an expiring signed receipt bound to the member, approved bytes, original description, model, and findings. The final write validates the receipt and keeps the reviewed description separate from the model suggestion. Repeated submissions use idempotency keys.
 

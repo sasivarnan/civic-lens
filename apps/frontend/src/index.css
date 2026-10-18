@@ -709,11 +709,20 @@ nav a.active {
 }
 .cover-controls {
   display: grid;
-  grid-template-columns: repeat(4, 1fr) auto;
+  grid-template-columns: minmax(110px, 1.4fr) repeat(4, 1fr) auto;
   gap: 10px;
   border: 1px solid var(--border);
   padding: 10px;
   border-radius: 10px;
+}
+.privacy-effect {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: var(--background);
+  color: inherit;
 }
 .cover-controls legend {
   font-size: 11px;
