@@ -24,6 +24,113 @@ Gemma 4 compares the photo with the resident description. EmbeddingGemma connect
 
 Invisible utility does not mean hidden processing. Label AI suggestions, explain uncertainty, and require human approval before publication. Keep privacy checks, insufficient-evidence results, and service failures visible. AI does not verify an incident or promise government action.
 
+## Architecture
+
+The application uses one container image for the frontend files and backend. The browser runs the interface. PostgreSQL, image storage, and model services run outside the application container. Hosting setup is separate from this architecture; this diagram does not claim a live deployment.
+
+```mermaid
+flowchart LR
+    subgraph DEVICE["Browser: user device"]
+        EDITOR["React and TanStack Router<br/>Local state: XState Store"]
+        LOCAL["GPS read, MediaPipe face suggestions,<br/>blur and solid covers, approved JPEG"]
+        VIEW["Map, issue history, review,<br/>action guides, and PDF printing"]
+        EDITOR --- LOCAL
+        EDITOR --- VIEW
+    end
+    subgraph APP["Application container: Node.js"]
+        API["Hono API and frontend files<br/>Auth.js, access checks, validation, and Effect services"]
+        GUIDES["Fixed action guides with source links"]
+        JOBS["Background vector jobs"]
+        API --- GUIDES
+    end
+    subgraph DATA["Persistent storage"]
+        DB[("PostgreSQL, PostGIS, pgvector<br/>Accounts, reports, findings, history, and vectors")]
+        IMAGES[("Private S3-compatible image storage<br/>Approved images only; Garage locally")]
+    end
+    subgraph AI["Model services: backend access only"]
+        GEMMA["Gemma 4<br/>Gemini API or local Ollama"]
+        EMBED["EmbeddingGemma<br/>Configured embedding endpoint; Ollama locally"]
+    end
+    subgraph SERVICES["Other services"]
+        EMAIL["SMTP email<br/>Mailpit locally"]
+        TILES["OpenStreetMap tiles"]
+    end
+    EDITOR <-->|"Same-origin API and session cookie"| API
+    API <-->|"Approved image and description; findings"| GEMMA
+    API <-->|"Reviewed text; query vector"| EMBED
+    API <-->|"Records and location-filtered vector search"| DB
+    API <-->|"Write images; read after visibility checks"| IMAGES
+    API -->|"Email sign-in links"| EMAIL
+    DB -->|"Pending indexing jobs"| JOBS
+    JOBS <-->|"Report text; document vector"| EMBED
+    JOBS -->|"Vectors and job state"| DB
+    VIEW -->|"Tile requests; no photo upload"| TILES
+```
+
+Original photos and unused photo GPS stay on the device. The backend receives only the approved copy and required report details. Published content, AI findings, and history stay in PostgreSQL. Approved images stay in private object storage; the backend checks issue visibility before it serves them. API keys stay on the backend. Fixed guides do not depend on model-generated government procedures.
+
+## How Gemma is used
+
+Gemma 4 receives the approved image and the resident's description in one request. The location is confirmed by the resident; Gemma does not infer or verify GPS. The backend checks the response format. This check does not establish that the findings are true.
+
+```mermaid
+flowchart TD
+    subgraph DEVICE["Browser: resident review"]
+        INPUT["Select photo and enter description"]
+        PRIVACY["Edit private details and approve new JPEG"]
+        HUMAN["Check AI suggestions, conflicts, and uncertainty"]
+        DECIDE["Confirm location, correct report, and approve publication"]
+        MORE["Select clearer evidence and review again"]
+        ERROR["Show error; keep unfinished form on device"]
+        INPUT --> PRIVACY
+        HUMAN --> DECIDE
+        MORE --> INPUT
+    end
+    subgraph SERVER["Backend: validation and publication"]
+        VALIDATE["Check member, image approval, and input; strip metadata"]
+        FORMAT{"Valid structured response?"}
+        ENOUGH{"Enough visible civic context?"}
+        RECEIPT["Issue signed, expiring review receipt"]
+        BLOCK["No publication receipt; explain missing evidence"]
+        SAVE["Check receipt, image, member, and approvals; save report"]
+    end
+    subgraph MODEL["Gemma 4: image and text reasoning"]
+        COMPARE["Compare Image 1 with resident statement"]
+        FINDINGS["Return category, visible observations, claims,<br/>conflicts, unknowns, and next evidence request"]
+        COMPARE --> FINDINGS
+    end
+    PRIVACY --> VALIDATE --> COMPARE
+    VALIDATE -->|"Invalid input"| ERROR
+    COMPARE -->|"Service error, limit, or timeout"| ERROR
+    FINDINGS --> FORMAT
+    FORMAT -->|"No"| ERROR
+    FORMAT -->|"Yes"| ENOUGH
+    ENOUGH -->|"Insufficient"| BLOCK --> MORE
+    ENOUGH -->|"Sufficient"| RECEIPT --> HUMAN
+    DECIDE --> SAVE
+    SAVE -->|"Expired or changed input; approval missing"| ERROR
+    SAVE -->|"Accepted"| PUBLIC["Public evidence history, action guide, and PDF export"]
+```
+
+EmbeddingGemma has a separate role. It converts reviewed text into vectors. The backend first limits candidates to public reports within 200 metres of the confirmed point, then ranks indexed candidates by text similarity. The resident decides whether to add evidence to an existing issue or create a new report. Similarity is not proof that two reports concern the same incident. A background job indexes new issues. Embedding failure does not remove an existing report or prevent normal map reading.
+
+### Gemma success and failure criteria
+
+These are project acceptance criteria for the demo. They are not an official judging rubric. A safe rejection can be a successful system result.
+
+| Check | Success criterion | Failure criterion |
+| --- | --- | --- |
+| Image and text reasoning | For a clear civic photo, Gemma uses visible evidence to suggest a supported category and compares it with the description. | It selects a category from text alone, ignores the image, or invents visible details. |
+| Conflicting claims | A partial view does not establish a claim such as a completely blocked path. The response separates the claim from visible evidence and states what is unknown. | It repeats an unsupported claim as an observed fact. |
+| Insufficient evidence | Blank, unrelated, text-only, or unclear input returns an insufficient result, no category, a useful evidence request, and no publication receipt. | The system permits publication from an insufficient review or invents civic context. |
+| Limits and accountability | The response avoids claims about permits, legal violations, exact measurements, or verified repairs. The resident checks and corrects the report before publication. | The response claims verification, or the system publishes without final human approval. |
+| Invalid or unavailable output | Invalid JSON or schema, timeout, provider failure, and service limits produce a clear error. No successful review or publication receipt is fabricated. | A service failure is shown as successful analysis, or fake model output is used. |
+| Review integrity | The receipt is bound to the member, approved image, original description, model, and findings. Expired, changed, or forged review inputs are rejected on a new publication. | A different member or changed analyzed input can reuse the receipt to publish. |
+| Related reports | EmbeddingGemma ranks nearby public, indexed reports with a compatible vector configuration. The resident makes the final choice. | Similarity is called a confirmed duplicate, or hidden and out-of-area reports enter the results. |
+| Retrieval failure | A failed search is shown as an error. Failed indexing has bounded retries; published reports remain readable. | A failed search is presented as proof that no related report exists, or model downtime prevents normal issue reading. |
+
+**Evidence and limits:** Local full-flow checks have used real Gemma, EmbeddingGemma, PostgreSQL, and private S3 storage. Automated tests cover output validation, insufficient evidence, receipt integrity, privacy, provider errors, and bounded retries. These checks do not establish broad model accuracy. The conflicting-claim example and category quality must still be shown with selected demo cases. Sustained hosted reliability remains unproven. Keep raw findings and reviewed content separate; never label an incident as AI verified.
+
 ## Development record
 
 The hackathon development window is 13-18 October 2026. This project uses AI coding assistance. Design decisions and local validation results are recorded in `WORKFLOW.md`.
