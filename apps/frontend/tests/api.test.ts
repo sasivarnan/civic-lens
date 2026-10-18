@@ -57,3 +57,23 @@ it("reports a failed sign-out before leaving the page", async () => {
   )
   await expect(signOut()).rejects.toThrow("Sign-out failed. Please try again.")
 })
+it("starts one demo session for concurrent page mounts", async () => {
+  const { loadSession } = await import("../src/lib/api")
+  const demo = { demoMode: true, user: { id: "demo-a", demo: true, role: "member" } }
+  const fetch = vi.fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify({ demoMode: true })))
+    .mockResolvedValueOnce(new Response(JSON.stringify(demo)))
+  vi.stubGlobal("fetch", fetch)
+  expect(await Promise.all([loadSession(), loadSession()])).toEqual([demo, demo])
+  expect(fetch).toHaveBeenCalledTimes(2)
+  expect(fetch.mock.calls[1][0]).toBe("/api/demo-session")
+  expect(fetch.mock.calls[1][1].method).toBe("POST")
+})
+it("keeps normal email sessions without creating a demo account", async () => {
+  const { loadSession } = await import("../src/lib/api")
+  const session = { user: { id: "real-member" } }
+  const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(session)))
+  vi.stubGlobal("fetch", fetch)
+  expect(await loadSession()).toEqual(session)
+  expect(fetch).toHaveBeenCalledTimes(1)
+})

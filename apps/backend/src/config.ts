@@ -4,6 +4,7 @@ export const config = z
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    DEMO_MODE: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
     PORT: z.coerce.number().default(3000),
     APP_ORIGIN: z.string().url().default("http://localhost:5173"),
     DATABASE_URL: z

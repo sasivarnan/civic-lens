@@ -56,3 +56,20 @@ export async function signOut() {
   })
   location.assign("/")
 }
+
+export type Session = {
+  user?: { id?: string; name?: string | null; email?: string; role?: string; demo?: boolean }
+  demoMode?: boolean
+}
+// StrictMode mounts twice. Share the session request to avoid duplicate visitors.
+let sessionRequest: Promise<Session> | undefined
+export function loadSession(): Promise<Session> {
+  if (!sessionRequest) {
+    sessionRequest = api<Session>("/auth/session").then((session) =>
+      session.demoMode && !session.user
+        ? api<Session>("/demo-session", { method: "POST" })
+        : session
+    ).finally(() => { sessionRequest = undefined })
+  }
+  return sessionRequest
+}

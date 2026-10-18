@@ -5,6 +5,7 @@ import { db, sql } from "./db.js";
 import { users, accounts, sessions, verificationTokens } from "./schema.js";
 import { config } from "./config.js";
 import { HttpError } from "./security.js";
+import { demoMember } from "./demo.js";
 import type { Context } from "hono";
 // Use the configured origin for sign-in links, independent of proxy headers.
 process.env.AUTH_URL = config.APP_ORIGIN + "/api/auth";
@@ -52,16 +53,26 @@ export const authConfig = initAuthConfig(() => ({
   },
 }));
 export { authHandler };
-export async function member(c: Context) {
+async function signedInMember(c: Context) {
   const auth = await getAuthUser(c);
   const id = auth?.user?.id ?? (auth?.session?.user as any)?.id;
   if (!id) throw new HttpError(401, "Sign in before continuing.");
   const [u] = await sql`SELECT id,name,role FROM users WHERE id=${id}`;
   if (!u) throw new HttpError(401, "Sign in before continuing.");
-  return u as { id: string; name: string | null; role: string };
+  return { ...u, demo: false } as { id: string; name: string | null; role: string; demo: boolean };
+}
+export async function member(c: Context) {
+  try {
+    return await signedInMember(c);
+  } catch (error) {
+    if (!(error instanceof HttpError) || error.status !== 401) throw error;
+    const demo = await demoMember(c);
+    if (demo) return demo;
+    throw error;
+  }
 }
 export async function admin(c: Context) {
-  const u = await member(c);
+  const u = await signedInMember(c);
   if (u.role !== "admin") throw new HttpError(403, "Admin access is required.");
   return u;
 }

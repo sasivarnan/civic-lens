@@ -58,11 +58,8 @@ import { Badge } from "./components/ui/badge"
 import { PrivacyEditor } from "./components/PrivacyEditor"
 import { Findings } from "./components/Findings"
 import { IssueReport } from "./components/IssueReport"
-import { api, sendEmailLink, signOut } from "./lib/api"
+import { api, sendEmailLink, signOut, loadSession, type Session } from "./lib/api"
 const Map = lazy(() => import("./components/Map"))
-type Session = {
-  user?: { id?: string; name?: string | null; email?: string; role?: string }
-}
 const SessionContext = createContext<Session | null>(null)
 const statusLabel = (s: string) =>
   ({
@@ -95,9 +92,9 @@ function Root() {
   const [authError, setAuthError] = useState("")
   const [signingOut, setSigningOut] = useState(false)
   useEffect(() => {
-    void api<Session>("/auth/session")
+    void loadSession()
       .then(setSession)
-      .catch(() => setSession({}))
+      .catch((error: Error) => { setSession({}); setAuthError(error.message) })
   }, [])
   return (
     <SessionContext.Provider value={session}>
@@ -120,7 +117,9 @@ function Root() {
             <Plus size={16} />
             Report an issue
           </Link>
-          {session?.user ? (
+          {session?.user?.demo ? (
+            <span className="text-sm">Demo visitor</span>
+          ) : session?.user ? (
             <button
               className="quiet-button"
               disabled={signingOut}
@@ -141,6 +140,11 @@ function Root() {
         </nav>
       </header>
       <main id="main">
+        {session?.demoMode && (
+          <p className="notice" role="status">
+            Hackathon demo. No email sign-in is needed. Reports and locations are public. Use sample evidence.
+          </p>
+        )}
         <ErrorText error={authError} />
         <Outlet />
       </main>
@@ -148,6 +152,7 @@ function Root() {
         <span>CivicLens · Evidence for better neighbourhoods.</span>
         <span>
           Community reports. Human review. <Link to="/privacy">Privacy</Link>
+          {session?.demoMode && <> · <Link to="/sign-in">Admin sign-in</Link></>}
         </span>
       </footer>
     </SessionContext.Provider>
@@ -1482,7 +1487,7 @@ function AuthPage({ signup = false }: { signup?: boolean }) {
         ? "Sign-in was not completed. Request a new link."
         : ""
     )
-  if (session?.user)
+  if (session?.user && !session.user.demo)
     return (
       <div className="prose-page">
         <h1>Already signed in</h1>

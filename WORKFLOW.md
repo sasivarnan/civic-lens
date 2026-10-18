@@ -12,6 +12,18 @@ Lead with the resident's task: report a problem, review evidence, find related r
 
 Use task names for primary actions, such as Review evidence. Keep AI labels, processing disclosures, uncertainty, failures, and final human approval visible. Keep model names and architecture details in privacy information and technical documentation. The theme changes presentation; it does not establish verification, automate publication, or expand the MVP.
 
+## Temporary hackathon access
+
+Set `DEMO_MODE=true` on the backend to let visitors use the reporting flow without email sign-in. The default is `false`. Change it to `false` and restart the backend to restore email sign-in for all member actions.
+
+Each browser receives a separate demo member and a 24-hour session. The server stores the member, demo flag, and session in PostgreSQL. It stores only a hash of the random demo token. The browser stores the token in an HttpOnly, SameSite cookie. HTTPS uses a Secure cookie. The server checks the cookie and expiry on each member request. A new browser or cleared cookie gets a new identity; this is not proof of a unique person.
+
+The browser reads `/api/auth/session`. When demo mode is active and no member is present, it calls `POST /api/demo-session`. The server checks the request origin and limits new session creation. Repeat calls reuse a valid session. Existing email sessions take priority. Admin actions still require a real email session with the admin role. Use `/sign-in` for admin access.
+
+Show a demo notice. Label new demo issues as demo data. Keep image privacy approval, AI review, final publication approval, member request limits, and report history. Use a separate demo database for public demonstrations. Set the flag back to `false` after the event. This disables demo sessions but does not delete their public reports, photos, or history.
+
+Validation on 18 October: automated checks cover session creation, reuse, expiry, changed tokens, mode disable, separate members, cross-origin rejection, HTTPS cookie flags, real-session priority, and admin denial. Local database checks confirm creation, reuse, separate visitors, and admin denial. Browser checks confirm the demo notice, report form access, and the admin email form. No new live AI call was needed for this change.
+
 ## Workflow overview
 
 ```mermaid

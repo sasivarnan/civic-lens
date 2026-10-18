@@ -14,6 +14,7 @@ import {
   type Issue,
 } from "@civiclens/shared";
 import { authConfig, authHandler, member, admin } from "./auth.js";
+import { createDemoMember } from "./demo.js";
 import { sql } from "./db.js";
 import { config, maxImageBytes } from "./config.js";
 import { analyze, embed, embeddingConfig } from "./models.js";
@@ -112,6 +113,29 @@ app.onError((error, c) => {
     { error: "The service is unavailable. Please try again." },
     503,
   );
+});
+// Only the explicit demo mode changes the normal Auth.js session response.
+app.get("/api/auth/session", async (c, next) => {
+  if (!config.DEMO_MODE) return next();
+  c.header("Cache-Control", "no-store");
+  try {
+    return c.json({ user: await member(c), demoMode: true });
+  } catch (error) {
+    if (!(error instanceof HttpError) || error.status !== 401) throw error;
+    return c.json({ demoMode: true });
+  }
+});
+app.post("/api/demo-session", async (c) => {
+  c.header("Cache-Control", "no-store");
+  if (!config.DEMO_MODE) throw new HttpError(404, "Demo mode is disabled.");
+  try {
+    return c.json({ user: await member(c), demoMode: true });
+  } catch (error) {
+    if (!(error instanceof HttpError) || error.status !== 401) throw error;
+  }
+  // A shared cap limits account creation without trusting proxy IP headers.
+  rate("demo-session-creation", 120);
+  return c.json({ user: await createDemoMember(c), demoMode: true });
 });
 app.all("/api/auth/*", authHandler());
 app.get("/api/health", async (c) => {
@@ -317,7 +341,7 @@ async function publish(c: any, target?: string) {
       if (target) {
         await tx`INSERT INTO evidence(id,issue_id,author_id,description,observation_date,analysis,model,analysis_input) VALUES(${id},${target},${u.id},${input.description},${input.observationDate},${tx.json(analysis)},${model},${audit})`;
       } else {
-        await tx`INSERT INTO issues(id,author_id,title,description,category,latitude,longitude,point,location_source,observation_date,analysis,model,analysis_input) VALUES(${id},${u.id},${input.title},${input.description},${input.category},${input.location.latitude},${input.location.longitude},ST_SetSRID(ST_MakePoint(${input.location.longitude},${input.location.latitude}),4326)::geography,${input.location.source},${input.observationDate},${tx.json(analysis)},${model},${audit})`;
+        await tx`INSERT INTO issues(id,author_id,title,description,category,latitude,longitude,point,location_source,observation_date,analysis,model,analysis_input,demo) VALUES(${id},${u.id},${input.title},${input.description},${input.category},${input.location.latitude},${input.location.longitude},ST_SetSRID(ST_MakePoint(${input.location.longitude},${input.location.latitude}),4326)::geography,${input.location.source},${input.observationDate},${tx.json(analysis)},${model},${audit},${u.demo === true})`;
         await tx`INSERT INTO vector_jobs(issue_id) VALUES(${id})`;
       }
       await tx`INSERT INTO assets(id,issue_id,evidence_id,object_key,digest,mime,bytes) VALUES(${assetId},${target ?? id},${target ? id : null},${objectKey},${hash(image)},'image/jpeg',${bytes})`;
