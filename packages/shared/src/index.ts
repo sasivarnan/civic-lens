@@ -81,6 +81,14 @@ export const reportSchema = z.object({
   finalApproved: z.literal(true),
 });
 export type ReportInput = z.infer<typeof reportSchema>;
+export const followUpEvidenceSchema = z
+  .object({
+    observationDate: observationDateSchema,
+    note: z.string().trim().max(1000).default(""),
+    imageApproved: z.literal(true),
+    finalApproved: z.literal(true),
+  })
+  .strict();
 export const caseStages = [
   "not_assigned",
   "assigned",

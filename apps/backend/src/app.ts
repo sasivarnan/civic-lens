@@ -5,6 +5,7 @@ import { z, ZodError } from "zod";
 import { randomUUID } from "node:crypto";
 import {
   reportSchema,
+  followUpEvidenceSchema,
   observationDateSchema,
   locationSchema,
   categories,
@@ -299,7 +300,10 @@ async function publish(c: any, target?: string) {
   if (target) idSchema.parse(target);
   const key = z.string().min(8).max(100).parse(c.req.header("Idempotency-Key"));
   const form = await c.req.parseBody();
-  const input = reportSchema.parse(JSON.parse(String(form.report ?? "{}")));
+  const input =
+    target && typeof form.evidence === "string"
+      ? followUpEvidenceSchema.parse(JSON.parse(form.evidence))
+      : reportSchema.parse(JSON.parse(String(form.report ?? "{}")));
   const image = await readImage(form.image);
   const digest = hash(JSON.stringify(input) + hash(image));
   const id = randomUUID(),
@@ -323,34 +327,49 @@ async function publish(c: any, target?: string) {
           evidenceId: target ? old.result_id : null,
         };
       }
-      const { analysis, model, issuedAt, inputMaxEdge } = verifyReceipt(
-        input.receipt,
-        u.id,
-        analyzedHash(image, input.analyzedDescription),
-      );
-      if (!isPublishableAnalysis(analysis))
+      const review =
+        "receipt" in input
+          ? verifyReceipt(
+              input.receipt,
+              u.id,
+              analyzedHash(image, input.analyzedDescription),
+            )
+          : null;
+      if (review && !isPublishableAnalysis(review.analysis))
         throw new HttpError(
           422,
           "Insufficient evidence. Select a clearer or more relevant photo and run AI review again.",
         );
+      const analysis = review?.analysis ?? null;
+      const model = review?.model ?? null;
       if (target) {
         const existing =
           await tx`SELECT id FROM issues WHERE id=${target} AND visibility='public' FOR UPDATE`;
         if (!existing.length) throw new HttpError(404, "Issue not found.");
       }
-      const audit = tx.json({
-        description: input.analyzedDescription,
-        inputHash: analyzedHash(image, input.analyzedDescription),
-        imageHash: hash(image),
-        model,
-        imageMaxEdge: inputMaxEdge ?? null,
-        analyzedAt: new Date(issuedAt).toISOString(),
-      });
+      const audit =
+        review && "analyzedDescription" in input
+          ? tx.json({
+              description: input.analyzedDescription,
+              inputHash: analyzedHash(image, input.analyzedDescription),
+              imageHash: hash(image),
+              model,
+              imageMaxEdge: review.inputMaxEdge ?? null,
+              analyzedAt: new Date(review.issuedAt).toISOString(),
+            })
+          : null;
+      const description =
+        "description" in input
+          ? input.description
+          : input.note ||
+            "Follow-up photo submitted for community review. No AI assessment.";
       const bytes = await putImage(objectKey, image);
       stored = true;
       if (target) {
-        await tx`INSERT INTO evidence(id,issue_id,author_id,description,observation_date,analysis,model,analysis_input) VALUES(${id},${target},${u.id},${input.description},${input.observationDate},${tx.json(analysis)},${model},${audit})`;
+        await tx`INSERT INTO evidence(id,issue_id,author_id,description,observation_date,analysis,model,analysis_input) VALUES(${id},${target},${u.id},${description},${input.observationDate},${analysis ? tx.json(analysis) : null},${model},${audit})`;
       } else {
+        if (!("title" in input))
+          throw new HttpError(400, "A new issue requires a full report.");
         await tx`INSERT INTO issues(id,author_id,title,description,category,latitude,longitude,point,location_source,observation_date,analysis,model,analysis_input,demo) VALUES(${id},${u.id},${input.title},${input.description},${input.category},${input.location.latitude},${input.location.longitude},ST_SetSRID(ST_MakePoint(${input.location.longitude},${input.location.latitude}),4326)::geography,${input.location.source},${input.observationDate},${tx.json(analysis)},${model},${audit},${u.demo === true})`;
         await tx`INSERT INTO vector_jobs(issue_id) VALUES(${id})`;
       }

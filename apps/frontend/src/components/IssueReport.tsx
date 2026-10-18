@@ -173,6 +173,9 @@ export function IssueReport({ issue }: { issue: Issue }) {
                   {entry.observationDate ?? entry.createdAt.slice(0, 10)} /{" "}
                   {entry.kind?.replaceAll("_", " ") ?? "Update"}
                 </h3>
+                {entry.kind === "evidence" && !entry.analysis && (
+                  <p>Community photo · No AI review</p>
+                )}
                 <p className="report-description">{entry.description}</p>
                 {entry.assetId && (
                   <figure>

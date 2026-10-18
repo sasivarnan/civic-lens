@@ -63,6 +63,7 @@ import { Findings } from "./components/Findings"
 import { AdminWorkspace } from "./components/AdminWorkspace"
 import { CaseProgress } from "./components/CaseProgress"
 import { IssueReport } from "./components/IssueReport"
+import { FollowUpEditor } from "./components/FollowUpEditor"
 import {
   api,
   sendEmailLink,
@@ -512,6 +513,17 @@ type EditorState = {
   analyzedDescription: string
   finalApproved: boolean
   key: string
+}
+function EvidenceEditor() {
+  const { issueId } = useParams({ strict: false }) as { issueId: string }
+  const session = useContext(SessionContext)
+  return (
+    <FollowUpEditor
+      key={issueId}
+      issueId={issueId}
+      signedIn={Boolean(session?.user)}
+    />
+  )
 }
 function Editor() {
   const { issueId } = useParams({ strict: false }) as { issueId?: string }
@@ -1294,6 +1306,11 @@ function Detail({
                         : h.kind?.replaceAll("_", " ")}{" "}
                       · {h.observationDate ?? h.createdAt.slice(0, 10)}
                     </p>
+                    {h.kind === "evidence" && !h.analysis && (
+                      <p className="text-xs text-muted-foreground">
+                        Community photo · No AI review
+                      </p>
+                    )}
                     <p>{h.description}</p>
                     {h.assetId && (
                       <img
@@ -1906,7 +1923,7 @@ const issueRoutes = issuesRoute.addChildren([
     createRoute({
       getParentRoute: () => issueRoute,
       path: "evidence/new",
-      component: Editor,
+      component: EvidenceEditor,
     }),
     createRoute({
       getParentRoute: () => issueRoute,

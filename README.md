@@ -86,7 +86,7 @@ Original photos and unused photo GPS stay on the device. The backend receives th
 
 ## How Gemma 4 is used
 
-The backend sends the approved photo and resident description in one request. Gemma compares both inputs. It returns a category, visible observations, resident claims, conflicts, unknowns, and a request for more evidence.
+For a new issue, the backend sends the approved photo and resident description in one request. Gemma compares both inputs. It returns a category, visible observations, resident claims, conflicts, unknowns, and a request for more evidence.
 
 The resident confirms the location. Gemma does not infer or verify GPS. The backend checks the response format. A correct format does not prove that the findings are true.
 
@@ -142,7 +142,7 @@ These are project acceptance criteria. They are not an official judging rubric. 
 | Insufficient evidence | Blank, unrelated, text-only, or unclear input returns an insufficient result. There is no category or publication receipt. The response requests useful evidence. | The system permits publication from an insufficient review or invents civic context. |
 | Human control | The response avoids claims about permits, legal violations, exact measurements, and verified repairs. The resident checks the final report. | The response claims verification, or the system publishes without final human approval. |
 | Service or output failure | Invalid JSON, invalid fields, timeout, provider failure, and service limits produce a clear error. No successful receipt is created. | A service failure is shown as successful analysis, or fake model output is used. |
-| Review receipt | A new publication requires a valid receipt for the member, photo, original description, model, and findings. | Another member or changed analyzed input can reuse the receipt. An expired or forged receipt is accepted. |
+| Review receipt | A new issue requires a valid receipt for the member, photo, original description, model, and findings. | Another member or changed analyzed input can reuse the receipt. An expired or forged receipt is accepted. |
 
 Local tests have used real Gemma, PostgreSQL, and private S3 storage. Automated tests check response validation, insufficient evidence, review receipts, privacy, provider errors, and retry limits. These tests do not establish broad model accuracy. Category quality and conflicting claims still need selected demo cases. Long-term hosted reliability is not established.
 
@@ -152,13 +152,15 @@ Keep model findings separate from reviewed content. Do not use an **AI verified*
 
 Sign in with the local admin account, `admin@civiclens.test`. Open the email link in Mailpit. Select Admin in the navigation, or open `/moderation`. Demo visitors cannot read the admin queue or change case progress.
 
-The Admin workspace opens the Cases section with the Reported filter. Each case shows its stage, authority, follow-up owner, last update, and next action. Filter by stage, refresh the queue, or load more cases. Open case leads to the case controls on the full issue page. The section and stage stay in the URL for refresh and browser Back. The queue lists public cases only.
+The Admin workspace opens the Cases section with the Reported filter. Each case shows its stage, assigned team, follow-up owner, and last update. Filter by stage, refresh the queue, or load more cases. Open case leads to the case controls on the full issue page. The section and stage stay in the URL for refresh and browser Back. The queue lists public cases only.
 
 Content review is a separate section for flagged content. Hide or restore content with a reason. Visibility changes do not establish resolution. Loading, empty results, and failed requests have separate messages.
 
 The main stages are Reported, Assigned, In progress, and Resolution reported. Reopened is an exception. Assigned cases can move directly to Resolution reported. The server checks each stage change.
 
 Select Manage case on an issue. Use action buttons to assign a team, start work, report resolution, or reopen a case. Assignment needs only a team name. The current admin is the default follow-up owner, and the server records an assignment note. Work updates need a short note. Complaint reference, handoff date, source link, and owner changes are in Optional details. The coordinator must check the responsible agency. CivicLens does not send a government complaint.
+
+Follow-up photo upload reuses the existing issue and location. Choose a photo, review privacy, check the date, and approve publication. A note is optional. Follow-up photos have no AI assessment and do not change case status. New issue submission still requires the full Gemma review and signed receipt.
 
 Resolution and reopening require public later photo evidence from the same issue and a short note. Reopening must use different evidence from the previous case update. Resolution reported does not prove official closure. Each update has a server date and a public history entry. A revision check rejects stale updates. The PDF includes case progress and history.
 

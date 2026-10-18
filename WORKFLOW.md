@@ -56,7 +56,7 @@ Each browser receives a separate demo member and a 24-hour session. The server s
 
 The browser reads `/api/auth/session`. When demo mode is active and no member is present, it calls `POST /api/demo-session`. The server checks the request origin and limits new session creation. Repeat calls reuse a valid session. Existing email sessions take priority. Admin actions still require a real email session with the admin role. Use `/sign-in` for admin access.
 
-Show a demo notice. Label new demo issues as demo data. Keep image privacy approval, AI review, final publication approval, member request limits, and report history. Use a separate demo database for public demonstrations. Set the flag back to `false` after the event. This disables demo sessions but does not delete their public reports, photos, or history.
+Show a demo notice. Label new demo issues as demo data. Keep image privacy approval, AI review for new issues, final publication approval, member request limits, and report history. Use a separate demo database for public demonstrations. Set the flag back to `false` after the event. This disables demo sessions but does not delete their public reports, photos, or history.
 
 Validation on 18 October: automated checks cover session creation, reuse, expiry, changed tokens, mode disable, separate members, cross-origin rejection, HTTPS cookie flags, real-session priority, and admin denial. Local database checks confirm creation, reuse, separate visitors, and admin denial. Browser checks confirm the demo notice, report form access, and the admin email form. No new live AI call was needed for this change.
 
@@ -72,6 +72,9 @@ flowchart TB
         CHOICE["Choose related issue or new report"]
         APPROVE["Approve final public report"]
         VIEW["Map, evidence history, action guide, and PDF export"]
+        FOLLOWUP["Later photo for an existing issue"]
+        FOLLOWCHECK["Approve photo privacy; check date; approve public sharing"]
+        FOLLOWUP --> FOLLOWCHECK
         PHOTO --> PRIVACY --> LOCATION
         REVIEW -->|"Enough visible civic context"| CHOICE --> APPROVE
         REVIEW -->|"Insufficient evidence: replace photo"| PHOTO
@@ -79,7 +82,8 @@ flowchart TB
     subgraph BACKEND["Backend: Hono on Node.js"]
         ANALYZE["Validate approved input; return AI preview"]
         SEARCH["Filter public reports by location; rank similarity"]
-        PUBLISH["Publish issue or later evidence"]
+        PUBLISH["Publish issue or reviewed related evidence"]
+        ADDPHOTO["Save community follow-up photo; no AI assessment"]
     end
     subgraph AI["AI services"]
         GEMMA["Gemma 4: observations, claims, conflicts, and uncertainty"]
@@ -103,7 +107,10 @@ flowchart TB
     EMBED -->|"Store publication vectors"| DB
     DB --> VIEW
     FILES -->|"Through backend access checks"| VIEW
-    VIEW -->|"New photo follows the same privacy steps"| PHOTO
+    VIEW --> FOLLOWUP
+    FOLLOWCHECK --> ADDPHOTO
+    ADDPHOTO --> DB
+    ADDPHOTO --> FILES
 ```
 
 The original photo stays on the device. Only the approved image can leave the browser.
@@ -290,7 +297,7 @@ Do not add a user selector that bypasses authentication. Store demo actions thro
 
 ## Pages
 
-All pages below are implemented locally. Reuse one browser editor for new issues and later evidence. Sign in before AI review so authentication does not interrupt the approval flow.
+All pages below are implemented locally. Use the full report editor for new issues and a short photo editor for later evidence. Sign in before AI review so authentication does not interrupt the approval flow.
 
 | Route                           | Purpose                                                                                                    |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -519,3 +526,13 @@ Plain HTTP network addresses do not provide phone GPS access. Use the map pin or
 Opening an In progress case keeps that stage selected. A note update must not select Resolution reported automatically. Resolution and reopening still require a selected public later photo. The dialog has an Upload evidence link to the existing privacy and evidence review flow. Publish the photo, return to Manage case, and select it. A public source URL is optional and cannot replace later photo evidence. Load earlier evidence from the dialog if the photo is outside the first history page.
 
 Validation: all 47 frontend tests and 59 backend tests passed. Lint, backend type checks, frontend build, and unused-code checks passed. Tests cover progress notes without photos, missing resolution evidence, and selection from earlier history. Browser checks confirmed the upload link and photo review page. No case data changed during the browser check.
+
+## Photo-only follow-up: updated on 18 October
+
+The later evidence page uses the existing issue and location. Do not request a new title, location, or description. The user selects a photo, reviews privacy, checks the date, and approves public sharing. The date defaults to today. A note is optional. Photo edits cancel approval. Failed uploads keep the approved photo and submission key for retry.
+
+`POST /api/issues/:id/evidence` accepts an approved image and an evidence object with observation date, optional note, image approval, and final approval. Check membership, origin, public parent issue, date, image type and size, and idempotency. Save the cleaned photo in private S3 storage. Save its evidence row and public history against the existing issue in one database transaction. Do not change issue location or case status. The issue and history APIs retrieve the photo link and note. The timeline and PDF label these photos as community evidence with no AI review.
+
+Follow-up photos do not need AI classification or a new review receipt. Their analysis, model, and AI audit fields are null. A repaired location must not be rejected because the original problem is no longer visible. New issue submissions still require Gemma review and a valid signed receipt. Keep the existing full-review evidence request compatible.
+
+Validation: all 117 automated tests, full build, lint, type checks, and unused-code checks passed. The local case smoke check uploaded photo-only evidence through the API, retrieved the stored photo, and confirmed null AI findings, inherited location, and unchanged case status. It then passed resolution and reopening with linked photos. Browser checks confirmed the short form, optional note, privacy approval gate, and a 390-pixel layout without horizontal overflow. No AI calls were made by these follow-up checks.

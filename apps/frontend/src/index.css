@@ -1556,3 +1556,8 @@ fieldset {
     font-size: 100%;
   }
 }
+
+.follow-up-page {
+  max-width: 800px;
+  padding-bottom: 40px;
+}

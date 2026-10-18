@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { config } from "./config.js";
 import { sql, authSql } from "./db.js";
-import { putImage } from "./media.js";
 import type { CaseStage } from "@civiclens/shared";
 if (
   config.NODE_ENV === "production" ||
@@ -96,7 +95,7 @@ assert.equal(
   200,
 );
 const id = randomUUID();
-const evidenceIds = [randomUUID(), randomUUID()];
+const evidenceIds: string[] = [];
 const queueFixtures: string[] = [];
 try {
   // Local database fixtures have no model output and make no AI-review claim.
@@ -106,12 +105,44 @@ try {
   })
     .jpeg()
     .toBuffer();
-  for (const evidenceId of evidenceIds) {
-    const objectKey = `evidence/${randomUUID()}.jpg`;
-    const bytes = await putImage(objectKey, image);
-    await sql`INSERT INTO evidence(id,issue_id,author_id,description,observation_date) VALUES(${evidenceId},${id},${session.user.id},'Synthetic follow-up fixture. No real repair or AI assessment is claimed.',CURRENT_DATE)`;
-    await sql`INSERT INTO assets(id,issue_id,evidence_id,object_key,digest,mime,bytes) VALUES(${randomUUID()},${id},${evidenceId},${objectKey},'case-smoke-fixture','image/jpeg',${bytes})`;
+  for (let index = 0; index < 2; index++) {
+    const form = new FormData();
+    form.set(
+      "image",
+      new File([image], "synthetic-follow-up.jpg", { type: "image/jpeg" }),
+    );
+    form.set(
+      "evidence",
+      JSON.stringify({
+        observationDate: new Date().toISOString().slice(0, 10),
+        imageApproved: true,
+        finalApproved: true,
+      }),
+    );
+    const response = await member.call(`/issues/${id}/evidence`, {
+      method: "POST",
+      headers: { "Idempotency-Key": randomUUID() },
+      body: form,
+    });
+    assert.equal(response.status, 201);
+    evidenceIds.push(((await response.json()) as any).evidenceId);
   }
+  const afterPhotos = (await (
+    await member.call(`/issues/${id}`)
+  ).json()) as any;
+  assert.equal(afterPhotos.status, "reported");
+  assert.equal(afterPhotos.caseProgress, null);
+  assert.equal(afterPhotos.latitude, 12.97);
+  for (const entry of afterPhotos.history.filter(
+    (item: any) => item.kind === "evidence",
+  )) {
+    assert.equal(entry.analysis, null);
+    assert(entry.assetId);
+    assert.equal((await member.call(`/assets/${entry.assetId}`)).status, 200);
+  }
+  console.log(
+    "PASS photo-only follow-up upload, private storage retrieval, inherited issue location, no AI findings, and no automatic case status change",
+  );
   let revision = 0;
   const payload = {
     authority: "Demo authority (sample only)",
