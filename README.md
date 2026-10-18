@@ -1,38 +1,49 @@
 # CivicLens
 
-A community evidence platform for Bengaluru. Report pedestrian safety issues, accessibility barriers, and potholes. Review privacy edits and Gemma findings before publication.
+CivicLens helps residents report pedestrian safety issues, accessibility barriers, and potholes in Bengaluru. Residents review the photo, AI findings, and public report before publication.
 
-## Hackathon track: Gemma 4 multimodal intelligence
+**Track 1: Best Use of Gemma 4 — G3. Multimodal AI Intelligence.**
 
-**Primary problem statement: Track 1 — Best Use of Gemma 4, G3. Multimodal AI Intelligence.**
+Gemma 4 compares a photo with the resident's text description. Image and text are the input formats for this demo. Audio is outside the current scope.
 
-CivicLens combines a photo with the resident's text description. Gemma 4 compares these inputs to identify visible conditions, separate observations from claims, identify conflicts, and explain uncertainty. The resident reviews the findings and approves the final report before publication.
+## Quick stack summary
 
-The demo must show reasoning across both inputs. For example, a resident can describe a path as completely blocked while the photo shows only part of the path. Gemma should explain what the photo supports and what it cannot establish. This is an example to demonstrate; it is not a claim that every model response is correct.
+| Part | Technology |
+| --- | --- |
+| Frontend | React, TypeScript, Vite, TanStack Router |
+| Interface | Tailwind CSS, shadcn/ui, XState Store |
+| Backend | Hono on Node.js, Effect v4 |
+| Accounts | Auth.js, Drizzle adapter, email links |
+| Database | PostgreSQL, PostGIS, Drizzle migrations |
+| Photo review | Browser canvas, MediaPipe face suggestions |
+| AI review | Gemma 4 through Gemini API or local Ollama |
+| Map | Leaflet, OpenStreetMap tiles |
+| Photo storage | Private S3-compatible storage; Garage locally |
+| Report export | Print layout and browser PDF export |
+| Development | PNPM workspaces, Docker, Vitest, ESLint, Knip |
+| Existing search code | EmbeddingGemma and pgvector; outside the current demo |
 
-Image and text are the input formats for this MVP. Audio is not required by the supplied G3 statement. EmbeddingGemma supports related-report retrieval after location filtering. Gemma 4's comparison of the photo and description is the core G3 use case.
+The frontend uses the requested [shadcn preset](https://ui.shadcn.com/create?preset=b27GcrRo). It uses Base UI Rhea, neutral colours, Inter, and Lucide. The lockfile fixes package versions.
 
 ## Product principle: invisible utility
 
 **The best use of artificial intelligence is invisible utility.**
 
-This principle guides the interface. It does not replace the G3 problem statement.
+This principle guides the interface. G3 remains the primary problem statement.
 
-CivicLens puts useful help inside one civic reporting task. Residents prepare a safe photo, review the evidence, find related reports, and share a report with next steps. They do not need a separate chatbot or AI tool.
+Keep useful AI help inside the reporting task. The resident prepares a photo, reviews the findings, and publishes a report with useful next steps. There is no separate chatbot.
 
-Gemma 4 compares the photo with the resident description. EmbeddingGemma connects related reports after location filtering. The interface leads with the task and its result. Model details belong in the technical documentation and privacy information.
-
-Invisible utility does not mean hidden processing. Label AI suggestions, explain uncertainty, and require human approval before publication. Keep privacy checks, insufficient-evidence results, and service failures visible. AI does not verify an incident or promise government action.
+Show AI suggestions, uncertainty, and failures. Require final human approval. AI does not verify an incident or promise government action.
 
 ## Architecture
 
-The application uses one container image for the frontend files and backend. The browser runs the interface. PostgreSQL, image storage, and model services run outside the application container. Hosting setup is separate from this architecture; this diagram does not claim a live deployment.
+One application container serves the frontend files and backend API. The browser runs the interface. The database, photo storage, and model services run outside this container. Public deployment is pending.
 
 ```mermaid
 flowchart LR
     subgraph DEVICE["Browser: user device"]
-        EDITOR["React and TanStack Router<br/>Local state: XState Store"]
-        LOCAL["GPS read, MediaPipe face suggestions,<br/>blur and solid covers, approved JPEG"]
+        EDITOR["React and TanStack Router<br/>Editor state in memory: XState Store"]
+        LOCAL["Read GPS; suggest face regions;<br/>apply blur or solid covers; approve JPEG"]
         VIEW["Map, issue history, review,<br/>action guides, and PDF printing"]
         EDITOR --- LOCAL
         EDITOR --- VIEW
@@ -40,45 +51,51 @@ flowchart LR
     subgraph APP["Application container: Node.js"]
         API["Hono API and frontend files<br/>Auth.js, access checks, validation, and Effect services"]
         GUIDES["Fixed action guides with source links"]
-        JOBS["Background vector jobs"]
+        JOBS["Existing vector job<br/>Outside current demo scope"]
         API --- GUIDES
     end
     subgraph DATA["Persistent storage"]
-        DB[("PostgreSQL, PostGIS, pgvector<br/>Accounts, reports, findings, history, and vectors")]
-        IMAGES[("Private S3-compatible image storage<br/>Approved images only; Garage locally")]
+        DB[("PostgreSQL and PostGIS<br/>Accounts, reports, findings, and history<br/>Existing pgvector tables")]
+        IMAGES[("Private S3-compatible photo storage<br/>Garage locally")]
     end
     subgraph AI["Model services: backend access only"]
         GEMMA["Gemma 4<br/>Gemini API or local Ollama"]
-        EMBED["EmbeddingGemma<br/>Configured embedding endpoint; Ollama locally"]
+        EMBED["Existing EmbeddingGemma path<br/>Outside current demo scope"]
     end
     subgraph SERVICES["Other services"]
         EMAIL["SMTP email<br/>Mailpit locally"]
         TILES["OpenStreetMap tiles"]
     end
     EDITOR <-->|"Same-origin API and session cookie"| API
-    API <-->|"Approved image and description; findings"| GEMMA
-    API <-->|"Reviewed text; query vector"| EMBED
-    API <-->|"Records and location-filtered vector search"| DB
-    API <-->|"Write images; read after visibility checks"| IMAGES
+    API <-->|"Approved photo and description; findings"| GEMMA
+    API <-->|"Records and location queries"| DB
+    API <-->|"Write photos; check visibility before reading"| IMAGES
     API -->|"Email sign-in links"| EMAIL
-    DB -->|"Pending indexing jobs"| JOBS
-    JOBS <-->|"Report text; document vector"| EMBED
-    JOBS -->|"Vectors and job state"| DB
     VIEW -->|"Tile requests; no photo upload"| TILES
+    API -.->|"Existing related-report search"| EMBED
+    EMBED -.->|"Query vector"| API
+    DB -.->|"Pending vector jobs"| JOBS
+    JOBS -.->|"Report text"| EMBED
+    EMBED -.->|"Document vector"| JOBS
+    JOBS -.->|"Vectors and job state"| DB
 ```
 
-Original photos and unused photo GPS stay on the device. The backend receives only the approved copy and required report details. Published content, AI findings, and history stay in PostgreSQL. Approved images stay in private object storage; the backend checks issue visibility before it serves them. API keys stay on the backend. Fixed guides do not depend on model-generated government procedures.
+Dashed links show existing embedding code outside the current demo. They do not mean that this code is disabled. The backend still checks for vector jobs every 15 seconds.
 
-## How Gemma is used
+Original photos and unused photo GPS stay on the device. The backend receives the approved copy and required report details. PostgreSQL stores published content, AI findings, and history. Private object storage holds approved photos. The backend checks visibility before it serves a photo. API keys stay on the backend.
 
-Gemma 4 receives the approved image and the resident's description in one request. The location is confirmed by the resident; Gemma does not infer or verify GPS. The backend checks the response format. This check does not establish that the findings are true.
+## How Gemma 4 is used
+
+The backend sends the approved photo and resident description in one request. Gemma compares both inputs. It returns a category, visible observations, resident claims, conflicts, unknowns, and a request for more evidence.
+
+The resident confirms the location. Gemma does not infer or verify GPS. The backend checks the response format. A correct format does not prove that the findings are true.
 
 ```mermaid
 flowchart TD
     subgraph DEVICE["Browser: resident review"]
         INPUT["Select photo and enter description"]
         PRIVACY["Edit private details and approve new JPEG"]
-        HUMAN["Check AI suggestions, conflicts, and uncertainty"]
+        HUMAN["Check AI suggestions, conflicts, and unknowns"]
         DECIDE["Confirm location, correct report, and approve publication"]
         MORE["Select clearer evidence and review again"]
         ERROR["Show error; keep unfinished form on device"]
@@ -87,12 +104,12 @@ flowchart TD
         MORE --> INPUT
     end
     subgraph SERVER["Backend: validation and publication"]
-        VALIDATE["Check member, image approval, and input; strip metadata"]
-        FORMAT{"Valid structured response?"}
+        VALIDATE["Check member, photo approval, and input; remove metadata"]
+        FORMAT{"Valid response format?"}
         ENOUGH{"Enough visible civic context?"}
-        RECEIPT["Issue signed, expiring review receipt"]
+        RECEIPT["Create signed review receipt with an expiry time"]
         BLOCK["No publication receipt; explain missing evidence"]
-        SAVE["Check receipt, image, member, and approvals; save report"]
+        SAVE["Check receipt, photo, member, and approvals; save report"]
     end
     subgraph MODEL["Gemma 4: image and text reasoning"]
         COMPARE["Compare Image 1 with resident statement"]
@@ -108,47 +125,40 @@ flowchart TD
     ENOUGH -->|"Insufficient"| BLOCK --> MORE
     ENOUGH -->|"Sufficient"| RECEIPT --> HUMAN
     DECIDE --> SAVE
-    SAVE -->|"Expired or changed input; approval missing"| ERROR
-    SAVE -->|"Accepted"| PUBLIC["Public evidence history, action guide, and PDF export"]
+    SAVE -->|"Expired receipt, changed input, or missing approval"| ERROR
+    SAVE -->|"Accepted"| PUBLIC["Public history, fixed action guide, and PDF export"]
 ```
 
-EmbeddingGemma has a separate role. It converts reviewed text into vectors. The backend first limits candidates to public reports within 200 metres of the confirmed point, then ranks indexed candidates by text similarity. The resident decides whether to add evidence to an existing issue or create a new report. Similarity is not proof that two reports concern the same incident. A background job indexes new issues. Embedding failure does not remove an existing report or prevent normal map reading.
+For example, a resident can describe a path as completely blocked. The photo can show only part of that path. Gemma must separate the claim from visible evidence and explain what remains unknown. This example is a demo target. It is not a measured accuracy result.
 
-### Gemma success and failure criteria
+### Success and failure criteria
 
-These are project acceptance criteria for the demo. They are not an official judging rubric. A safe rejection can be a successful system result.
+These are project acceptance criteria. They are not an official judging rubric. A safe rejection can be a successful system result.
 
 | Check | Success criterion | Failure criterion |
 | --- | --- | --- |
-| Image and text reasoning | For a clear civic photo, Gemma uses visible evidence to suggest a supported category and compares it with the description. | It selects a category from text alone, ignores the image, or invents visible details. |
-| Conflicting claims | A partial view does not establish a claim such as a completely blocked path. The response separates the claim from visible evidence and states what is unknown. | It repeats an unsupported claim as an observed fact. |
-| Insufficient evidence | Blank, unrelated, text-only, or unclear input returns an insufficient result, no category, a useful evidence request, and no publication receipt. | The system permits publication from an insufficient review or invents civic context. |
-| Limits and accountability | The response avoids claims about permits, legal violations, exact measurements, or verified repairs. The resident checks and corrects the report before publication. | The response claims verification, or the system publishes without final human approval. |
-| Invalid or unavailable output | Invalid JSON or schema, timeout, provider failure, and service limits produce a clear error. No successful review or publication receipt is fabricated. | A service failure is shown as successful analysis, or fake model output is used. |
-| Review integrity | The receipt is bound to the member, approved image, original description, model, and findings. Expired, changed, or forged review inputs are rejected on a new publication. | A different member or changed analyzed input can reuse the receipt to publish. |
-| Related reports | EmbeddingGemma ranks nearby public, indexed reports with a compatible vector configuration. The resident makes the final choice. | Similarity is called a confirmed duplicate, or hidden and out-of-area reports enter the results. |
-| Retrieval failure | A failed search is shown as an error. Failed indexing has bounded retries; published reports remain readable. | A failed search is presented as proof that no related report exists, or model downtime prevents normal issue reading. |
+| Image and text | Gemma uses the photo to suggest a supported category. It compares the photo with the description. | It selects a category from text alone, ignores the photo, or invents visible details. |
+| Conflicting claims | It separates claims from observations. It states what the available view cannot establish. | It repeats an unsupported claim as an observed fact. |
+| Insufficient evidence | Blank, unrelated, text-only, or unclear input returns an insufficient result. There is no category or publication receipt. The response requests useful evidence. | The system permits publication from an insufficient review or invents civic context. |
+| Human control | The response avoids claims about permits, legal violations, exact measurements, and verified repairs. The resident checks the final report. | The response claims verification, or the system publishes without final human approval. |
+| Service or output failure | Invalid JSON, invalid fields, timeout, provider failure, and service limits produce a clear error. No successful receipt is created. | A service failure is shown as successful analysis, or fake model output is used. |
+| Review receipt | A new publication requires a valid receipt for the member, photo, original description, model, and findings. | Another member or changed analyzed input can reuse the receipt. An expired or forged receipt is accepted. |
 
-**Evidence and limits:** Local full-flow checks have used real Gemma, EmbeddingGemma, PostgreSQL, and private S3 storage. Automated tests cover output validation, insufficient evidence, receipt integrity, privacy, provider errors, and bounded retries. These checks do not establish broad model accuracy. The conflicting-claim example and category quality must still be shown with selected demo cases. Sustained hosted reliability remains unproven. Keep raw findings and reviewed content separate; never label an incident as AI verified.
+Local tests have used real Gemma, PostgreSQL, and private S3 storage. Automated tests check response validation, insufficient evidence, review receipts, privacy, provider errors, and retry limits. These tests do not establish broad model accuracy. Category quality and conflicting claims still need selected demo cases. Long-term hosted reliability is not established.
 
-## Development record
+Keep model findings separate from reviewed content. Do not use an **AI verified** label. Fixed action guides use checked source links. Gemma does not create government procedures or submit complaints.
 
-The hackathon development window is 13-18 October 2026. This project uses AI coding assistance. Design decisions and local validation results are recorded in `WORKFLOW.md`.
+## EmbeddingGemma status
 
-Project-wide Git tracking started on 15 October 2026. The first project commits group existing local work by area; they do not represent the time when each feature was written. No commit dates were changed. The `frontend-scaffold` branch preserves the generated frontend starter commit from 15 October 2026. Later work is committed after checks pass.
+EmbeddingGemma is not part of the current demo. The code still contains a related-report button, an API route, a model adapter, vector jobs, and pgvector tables. Earlier local tests used this path. That test history does not mean that the current demo uses it.
 
-## Workspace
+The core Gemma 4 flow does not require this search. A user can publish a new issue without it. Removal can keep photo review, image-and-text reasoning, publication, the map, history, community actions, and PDF export.
 
-- `apps/frontend`: React, Vite, TanStack Router, XState Store, Tailwind, and shadcn/ui.
-- `apps/backend`: Hono on Node.js, Auth.js, Drizzle, PostgreSQL, and Effect v4.
-- `packages/shared`: request schemas, public types, and fixed action guides.
-- `infra`: local PostgreSQL with PostGIS/pgvector and Garage storage settings.
-
-The frontend uses the requested [shadcn preset](https://ui.shadcn.com/create?preset=b27GcrRo): Base UI Rhea, neutral colours, Inter, and Lucide. Package versions are fixed by `pnpm-lock.yaml`.
+Remove the UI search controls, API route, model settings, vector job timer, and vector writes together. Update the smoke test and documentation. Keep applied database migrations and existing data during this change. Remove unused database objects later with a separate migration. No embedding code has been removed yet.
 
 ## Run locally
 
-Requirements: Node.js 22.12 or later, PNPM 12.4.1, and a running Docker-compatible engine. The installed local Ollama models are used only when you request AI review or retrieval.
+Requirements: Node.js 22.12 or later, PNPM 12.4.1, and a running Docker-compatible engine.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -159,39 +169,43 @@ pnpm db:seed
 pnpm dev
 ```
 
-Open <http://localhost:5173>. The backend runs on port 3000. The local test mailbox is at <http://localhost:8025>. Setup creates an ignored `.env` with generated local secrets and downloads the face model and WASM files. It does not replace an existing `.env`.
+Open <http://localhost:5173>. The backend uses port 3000. The local test mailbox is at <http://localhost:8025>.
 
-Sign in with `reporter@civiclens.test` or `community@civiclens.test`. Open the email in the local mailbox and follow its verification link. The seed command also creates an Admin account for local moderation testing. There is no password or user-switch bypass. All demo account addresses and roles are in `apps/backend/src/seed.ts`.
+Setup creates an ignored `.env` with local secrets. It downloads the face model and WASM files. It does not replace an existing `.env`. Local volumes retain data. Do not remove them unless you intend to delete that data.
 
-For temporary hackathon access, set `DEMO_MODE=true` in the backend environment and restart the backend. Visitors receive separate 24-hour demo sessions without email sign-in. New demo issues have a demo label. Privacy checks, evidence review, and final approval still apply. Admin actions require a real email session with the admin role; use `/sign-in`. The default is `false`. Set it back to `false` and restart to stop demo access. This does not delete stored demo reports or images. Use a separate demo database.
+For normal sign-in, use `reporter@civiclens.test` or `community@civiclens.test`. Open the email in the local mailbox. Follow the verification link. The seed command also creates an admin account. The account list is in `apps/backend/src/seed.ts`. There are no passwords. The seed command refuses to run in production.
 
-Seeded issues are labelled examples, with no fabricated photos or AI results. New submissions use the real database, storage, and configured model services. The demo seed refuses to run in production.
+For temporary hackathon access, set `DEMO_MODE=true` and restart the backend. Each visitor browser receives a separate 24-hour demo session. No email sign-in is needed. New demo issues have a demo label. Privacy checks, review, and final approval still apply. Admin actions require a real email session with the admin role. Use `/sign-in` for admin access.
 
-## Services and models
+The default value is `DEMO_MODE=false`. Set it back to `false` and restart to stop demo access. This does not delete demo reports or photos. Use a separate demo database.
 
-Email links use Auth.js and the Drizzle adapter with PostgreSQL database sessions. Mailpit captures local email; replace the SMTP settings for deployment. Sign-up creates an account only after email verification. Public issue responses omit private account fields.
+## Services and limits
 
-Auth.js uses a dedicated database client. Spatial and vector queries use a separate parameterized PostgreSQL client because Drizzle changes its client's JSON encoders. Migrations enable PostGIS and pgvector. The initial service area is a configurable Bengaluru demo rectangle; its production boundary and the 200-metre retrieval radius still require validation.
+Auth.js stores account sessions in PostgreSQL through the Drizzle adapter. Sign-up creates an account after email verification. Mailpit captures local email. Configure a production SMTP service before deployment. Public issue responses exclude private account fields.
 
-Local Gemma receives a metadata-free derivative with a longest edge of 512 pixels by default (`OLLAMA_IMAGE_SIZE`). Larger local requests timed out during validation. The approved storage image keeps its larger resolution. Hosted input limits are unchanged. Smaller input can lose detail; model quality still needs separate tests. The signed receipt and private audit record include the configured model-input edge limit.
+Auth.js uses a separate database client. Raw location and vector queries use another client because Drizzle changes JSON encoding. Migrations enable PostGIS and pgvector. The initial service area is a Bengaluru demo rectangle. Its production boundary still needs validation.
 
-The default development model path uses the installed `gemma4:12b-mlx` and `embeddinggemma-2:740m` through Ollama. Model failures are shown explicitly. No fake AI fallback is used. The embedding adapter uses 768-dimensional vectors and records its model/prefix configuration. A stored job retries failed indexing, with a bounded attempt count. Normal issue reading does not require AI availability.
+Set `MODEL_PROVIDER=gemini` for hosted Gemma. Keep `GEMINI_API_KEY` in the backend environment. The default local provider uses `gemma4:12b-mlx` through Ollama. Local input has a longest edge of 512 pixels by default. Set `OLLAMA_IMAGE_SIZE` to change this limit. Smaller input can lose detail. The approved storage photo keeps its larger size.
 
-Hosted validation on 17 October 2026 used `gemma-4-26b-a4b-it` after a key replacement. A full local API check and a real mobile-browser submission passed. A later API repeat failed during blank-image review, so sustained reliability is not established. The adapter retries HTTP 500, 502, 503, or 504 once within its original time limit. A hosted HTTP 429 is returned as a separate service-limit error and is not retried. Invalid output, billing, permissions, and quota errors fail safely. No model fallback is used. Mocked tests cover request privacy, bounded retries, strict output validation, and safe errors. Keep `GEMINI_API_KEY` server-only in the ignored `.env`. Provider privacy review, event eligibility, public deployment, and broader image quality remain open.
+Hosted checks on 17 October 2026 used `gemma-4-26b-a4b-it`. A full API check and a mobile-browser submission passed. A later blank-image check failed. The adapter retries HTTP 500, 502, 503, or 504 once within the original time limit. It does not retry HTTP 429. Invalid output, billing errors, permission errors, and quota errors fail with an error. There is no fake AI or automatic model fallback.
 
-Garage is local S3-compatible development storage. Its port is bound to loopback. The application serves images through visibility checks; buckets are not public websites. Keep the configurable S3 interface when choosing hosted storage. Local volumes persist data; do not remove volumes unless you intend to remove that local data.
+Garage provides local S3-compatible storage. Its port is bound to loopback. Buckets are private. The backend serves photos after visibility checks. Store permanent data outside the application container.
 
 ## Privacy and reliability
 
-Original photos, GPS parsing, face suggestions, blur, and solid covers stay in the browser. Face suggestions use strong blur. Manual regions start as solid covers; each region has an effect selector. The blur is part of the exported image pixels, not a display filter. Unsupported blur uses a solid cover. Blur can leave identifying details visible; use solid covers when needed. The user approves a fresh JPEG before AI processing. File processing removes source metadata. Manual covers remain available if face suggestions fail. Detection does not certify complete privacy.
+Photo edits run on the device. Face suggestions use strong blur. Manual regions start as solid covers. Each region has an effect selector. Both effects change the exported JPEG pixels. If blur is unavailable, use a solid cover. Blur can leave identifying details visible. Use a solid cover when needed. Review the exact exported copy before upload.
 
-There are no server drafts. A refresh or closed tab can lose unfinished work. Insufficient evidence has no category and cannot be published. Replace the image and run review again. Earlier stored AI reviews have no recorded evidence assessment. For sufficient civic context, the analysis endpoint returns an expiring signed receipt bound to the member, approved bytes, original description, model, and findings. The final write validates the receipt and keeps the reviewed description separate from the model suggestion. Repeated submissions use idempotency keys.
+The browser exports a new JPEG. The server also removes source metadata before AI review and storage. Detection can miss private details. These checks do not certify complete privacy.
 
-Support and dated observations are separate records. Admin visibility controls do not establish resolution. Hidden issue images stop being served through the application. Previously downloaded images or PDFs cannot be revoked.
+There are no server drafts. A refresh or closed tab can lose unfinished work. Insufficient evidence has no category and cannot be published. Replace the photo and run review again.
 
-Before any public deployment, complete retention/deletion policy, production SMTP, secrets, database and object backups, model privacy review, distributed rate limiting if replicas are added, and manual accessibility testing. Local request limits are process-local. Image upload is limited to 8 MB and 20 megapixels.
+A signed review receipt links the member, approved photo, original description, model, and findings. It has an expiry time. The final write checks this receipt. Reviewed text stays separate from model findings. Repeated submissions use an idempotency key to prevent duplicate writes.
 
-OpenStreetMap tiles require attribution and caching. There is no offline prefetch, autocomplete, or external place search. The map/list and coordinate fields remain separate. Fixed action guides cite official sources, describe their verification limits, and do not submit government complaints.
+Support and dated observations are separate records. Admin visibility changes do not establish resolution. Hidden photos stop being served. Previously downloaded photos and PDFs cannot be recalled.
+
+Uploads have an 8 MB limit and a 20-megapixel limit. Request limits apply within each backend process. Before public deployment, check retention, deletion, SMTP, secrets, backups, model privacy terms, and accessibility. Add shared rate limits if more backend instances are used.
+
+OpenStreetMap tiles require attribution and caching. There is no offline tile download, address autocomplete, or place search in this MVP.
 
 ## Checks
 
@@ -203,21 +217,19 @@ pnpm test
 pnpm build
 ```
 
-The unused-code check uses Knip across the workspace, including exported entry-point declarations. Backend and shared TypeScript checks reject unused declarations. MediaPipe asset setup stays in the frontend workspace that owns its dependency.
+Tests check privacy export, changed photos, withdrawn approval, failed export, blur fallback, metadata removal, and input limits. Backend tests also check review receipts, expired receipts, changed inputs, cross-origin writes, and access checks.
 
-Privacy tests also check stale exports, withdrawn review, encoder failures, metadata removal before AI/storage, orientation, solid covers, and input limits.
+Editor and print tests use a simulated browser. They do not confirm physical-device behaviour or PDF page breaks. Inspect the saved PDF separately.
 
-Editor component tests check photo replacement, GPS removal, manual-coordinate confirmation, and invalid files. The print component test checks complete history, evidence, AI limits, sources, and the print command. These tests use a simulated browser environment. They do not confirm an actual PDF file or physical-device behaviour.
-
-The backend tests check signed receipts, tampering, expiry, cross-origin writes, unauthenticated submission, validation, and API fallbacks.
-
-For a live local smoke test, start the app and services, then use the included CC0 reference image. Its source and usage limits are in `fixtures/README.md`:
+For a live local smoke test, start the app and services. Use the included CC0 reference image. Its source and usage limits are in `fixtures/README.md`.
 
 ```sh
 TEST_IMAGE="$PWD/fixtures/road-damage.jpg" pnpm --filter @civiclens/backend test:smoke
 ```
 
-This test uses the real local email flow, the configured Gemma provider, EmbeddingGemma, PostgreSQL, and Garage. It checks that blank input has no publication receipt and that a valid analysis receipt names the configured model. It creates a test issue, adds evidence and community actions, checks moderation access, and hides its test issue afterwards. For hosted Gemma, the runner waits five seconds before each review, including the first. Set `TEST_AI_GAP_MS` from 5000 to 900000 to increase this wait. Run one live test process at a time. This delay does not establish compliance with a project quota and does not pace browser requests or the adapter's single server-error retry. Normal automated tests use mocked provider responses. Use the local development database only. The test email links and session cookies are not printed.
+The current runner still requires EmbeddingGemma. It also uses real email sign-in, the configured Gemma provider, PostgreSQL, and Garage. It creates a test issue, adds evidence and community actions, checks access, and hides the issue. Use only the local development database.
+
+For hosted Gemma, the runner waits five seconds before each review. Set `TEST_AI_GAP_MS` from 5000 to 900000 to increase the wait. Run one live test process at a time. This wait does not guarantee compliance with provider quotas. Normal automated tests use simulated provider responses. Tests do not print email links or session cookies.
 
 ## Container build
 
@@ -225,6 +237,17 @@ This test uses the real local email flow, the configured Gemma provider, Embeddi
 docker build -t civiclens .
 ```
 
-The application image contains the frontend build and Hono server. PostgreSQL, object storage, and the embedding runtime stay external. Run migrations before starting a deployed version. Supply all production secrets at runtime. The application refuses the default development secret in production. No hosted resource has been created.
+The image contains the frontend build and Hono server. Keep the database, object storage, and model runtimes outside it. Apply migrations before startup. Supply production secrets at runtime. The application rejects the default development secret in production. No hosted resource has been created.
 
-See [WORKFLOW.md](WORKFLOW.md) for the current product decisions and remaining checks.
+## Workspace and development record
+
+| Folder | Content |
+| --- | --- |
+| `apps/frontend` | Browser interface |
+| `apps/backend` | API, account checks, model adapters, and storage access |
+| `packages/shared` | Request schemas, public types, and fixed action guides |
+| `infra` | Local PostgreSQL and Garage settings |
+
+The development window is 13–18 October 2026. This project uses AI coding assistance. Git tracking started on 15 October 2026. The first commits group existing local work by area. They do not state when each feature was written. No commit dates were changed. The `frontend-scaffold` branch keeps the generated frontend starter commit.
+
+See [WORKFLOW.md](WORKFLOW.md) for agreed decisions and remaining checks.
