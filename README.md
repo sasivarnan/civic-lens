@@ -2,6 +2,16 @@
 
 A community evidence platform for Bengaluru. Report pedestrian safety issues, accessibility barriers, and potholes. Review privacy edits and Gemma findings before publication.
 
+## Product theme: invisible utility
+
+**The best use of artificial intelligence is invisible utility.**
+
+CivicLens puts useful help inside one civic reporting task. Residents prepare a safe photo, review the evidence, find related reports, and share a report with next steps. They do not need a separate chatbot or AI tool.
+
+Gemma 4 compares the photo with the resident description. EmbeddingGemma connects related reports after location filtering. The interface leads with the task and its result. Model details belong in the technical documentation and privacy information.
+
+Invisible utility does not mean hidden processing. Label AI suggestions, explain uncertainty, and require human approval before publication. Keep privacy checks, insufficient-evidence results, and service failures visible. AI does not verify an incident or promise government action.
+
 ## Development record
 
 The hackathon development window is 13-18 October 2026. This project uses AI coding assistance. Design decisions and local validation results are recorded in `WORKFLOW.md`.

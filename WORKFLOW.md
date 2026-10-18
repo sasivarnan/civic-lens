@@ -1,8 +1,16 @@
 # CivicLens: workflow and architecture
 
-Updated: 17 October 2026. Status: local MVP implemented. Public deployment is pending.
+Updated: 18 October 2026. Status: local MVP implemented. Public deployment is pending.
 
 Keep agreed decisions in this file. Keep exploration and alternatives in the project chat.
+
+## Product principle: invisible utility
+
+**The best use of artificial intelligence is invisible utility.**
+
+Lead with the resident's task: report a problem, review evidence, find related reports, and share useful next steps. Keep AI help inside this flow. Do not add a separate chatbot or make users choose a model to report an issue.
+
+Use task names for primary actions, such as Review evidence. Keep AI labels, processing disclosures, uncertainty, failures, and final human approval visible. Keep model names and architecture details in privacy information and technical documentation. The theme changes presentation; it does not establish verification, automate publication, or expand the MVP.
 
 ## Workflow overview
 

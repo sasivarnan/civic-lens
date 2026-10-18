@@ -105,7 +105,7 @@ it("clears photo GPS, review, and approved output when the photo is replaced", a
     expect(
       (
         screen.getByRole("button", {
-          name: "Review evidence with Gemma",
+          name: "Review evidence",
         }) as HTMLButtonElement
       ).disabled
     ).toBe(false)
@@ -135,7 +135,7 @@ it("clears photo GPS, review, and approved output when the photo is replaced", a
   expect(
     (
       screen.getByRole("button", {
-        name: "Review evidence with Gemma",
+        name: "Review evidence",
       }) as HTMLButtonElement
     ).disabled
   ).toBe(true)
@@ -194,7 +194,7 @@ it("blocks corrupt image approval without an AI request", async () => {
   expect(
     (
       screen.getByRole("button", {
-        name: "Review evidence with Gemma",
+        name: "Review evidence",
       }) as HTMLButtonElement
     ).disabled
   ).toBe(true)
@@ -247,9 +247,7 @@ it("blocks publication after insufficient evidence and allows a new review", asy
     target: { value: "Synthetic evidence review test." },
   })
   await approve()
-  fireEvent.click(
-    screen.getByRole("button", { name: "Review evidence with Gemma" })
-  )
+  fireEvent.click(screen.getByRole("button", { name: "Review evidence" }))
   await screen.findByText("Insufficient evidence")
   expect(screen.queryByRole("button", { name: /Publish/ })).toBeNull()
   expect(screen.queryByLabelText("Reviewed category")).toBeNull()
@@ -268,9 +266,7 @@ it("blocks publication after insufficient evidence and allows a new review", asy
     screen.getByRole("checkbox", { name: /I checked this incident point/ })
   )
   await approve()
-  fireEvent.click(
-    screen.getByRole("button", { name: "Review evidence with Gemma" })
-  )
+  fireEvent.click(screen.getByRole("button", { name: "Review evidence" }))
   await screen.findByLabelText("Reviewed category")
   expect(screen.queryByText("Insufficient evidence")).toBeNull()
 })
@@ -304,9 +300,7 @@ it("keeps the approved photo and description after a failed AI request", async (
     target: { value: "Synthetic road evidence test." },
   })
   await approve()
-  fireEvent.click(
-    screen.getByRole("button", { name: "Review evidence with Gemma" })
-  )
+  fireEvent.click(screen.getByRole("button", { name: "Review evidence" }))
   await screen.findByRole("alert")
   expect(
     (screen.getByLabelText("What did you observe?") as HTMLTextAreaElement)
@@ -318,7 +312,7 @@ it("keeps the approved photo and description after a failed AI request", async (
   expect(
     (
       screen.getByRole("button", {
-        name: "Review evidence with Gemma",
+        name: "Review evidence",
       }) as HTMLButtonElement
     ).disabled
   ).toBe(false)

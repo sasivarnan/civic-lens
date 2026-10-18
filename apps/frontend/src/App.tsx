@@ -239,9 +239,9 @@ function Home() {
             <span>Better streets.</span>
           </h1>
           <p>
-            Report local barriers. Bring the evidence together.
+            Turn a street problem into a clear community report.
             <br />
-            Help your community understand what needs attention.
+            Review the evidence. Find related reports. Share useful next steps.
           </p>
           <div className="hero-actions">
             <Link to="/report/new" className="primary-link">
@@ -322,7 +322,7 @@ function Home() {
             [
               "02",
               "Review what it shows",
-              "Gemma helps separate visible evidence, resident claims, and uncertainty.",
+              "Compare what the photo shows with the reported problem. AI suggestions keep observations, claims, and uncertainty separate.",
             ],
             [
               "03",
@@ -900,6 +900,10 @@ function Editor() {
                   or <Link to="/sign-up">create an account</Link>.
                 </p>
               )}
+              <p className="text-sm text-muted-foreground">
+                AI suggests findings from your approved photo and description.
+                Review each suggestion before sharing.
+              </p>
               <Button
                 disabled={
                   !session?.user ||
@@ -915,7 +919,7 @@ function Editor() {
                 ) : (
                   <Eye />
                 )}
-                Review evidence with Gemma
+                Review evidence
               </Button>
             </CardContent>
           </Card>
@@ -1058,8 +1062,7 @@ function Editor() {
                   <p className="notice">
                     Select a clearer or more relevant photo in step 1. Review
                     privacy, confirm the location, and run AI review again.
-                    Publication is blocked for this image. Gemma can make
-                    mistakes.
+                    Publication is blocked for this image. AI can make mistakes.
                   </p>
                 )}
               </CardContent>
@@ -1082,7 +1085,7 @@ function Editor() {
           <hr />
           <h3>A shared record, not a verdict.</h3>
           <p>
-            Gemma can make mistakes. Check its observations and keep uncertain
+            AI can make mistakes. Check its observations and keep uncertain
             claims clear.
           </p>
           <hr />
